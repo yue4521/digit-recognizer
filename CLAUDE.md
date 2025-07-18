@@ -9,3 +9,4 @@
 7. Finally, add a “Review” section to the todo.md file summarizing the changes made and including any other relevant information.
 8. At each logical milestone, stage and commit your changes with git. Write the commit message in clear, concise Japanese that adheres to the Semantic Commit Message convention.
 9. Add any generated caches, build artifacts, or files containing sensitive information to gitignore as needed, and do not commit them to the repository.
+10. Always test in a virtual environment such as WSL or Python venv to ensure reproducibility and safety.
