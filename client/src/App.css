@@ -1,0 +1,359 @@
+/* App.css */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.App-header {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #fff, #f0f0f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.App-header p {
+  margin: 0.5rem 0 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.App-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.upload-section {
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 2rem;
+}
+
+.upload-area {
+  position: relative;
+  min-height: 300px;
+  border: 3px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.upload-area.drag-over {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.2);
+  transform: scale(1.02);
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-placeholder {
+  text-align: center;
+  padding: 2rem;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.upload-placeholder p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.upload-hint {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.preview-container {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.reset-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.action-section {
+  margin-bottom: 2rem;
+}
+
+.predict-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+}
+
+.predict-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(76, 175, 80, 0.4);
+}
+
+.predict-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-section {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-section {
+  width: 100%;
+  max-width: 500px;
+}
+
+.error-message {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.5);
+  color: #ffcdd2;
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+.result-section {
+  width: 100%;
+  max-width: 500px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-container {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.result-container h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  color: #f0f0f0;
+}
+
+.predicted-digit {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #4CAF50;
+  margin: 1rem 0;
+  text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+  line-height: 1;
+}
+
+.confidence {
+  font-size: 1.2rem;
+  margin: 1rem 0;
+  color: #e0e0e0;
+}
+
+.filename {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  color: #ccc;
+}
+
+.App-footer {
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  padding: 1rem;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.App-footer p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .App-header h1 {
+    font-size: 2rem;
+  }
+  
+  .App-header p {
+    font-size: 1rem;
+  }
+  
+  .App-main {
+    padding: 1rem;
+  }
+  
+  .upload-area {
+    min-height: 250px;
+  }
+  
+  .upload-icon {
+    font-size: 3rem;
+  }
+  
+  .predict-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+  }
+  
+  .predicted-digit {
+    font-size: 4rem;
+  }
+  
+  .result-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .App-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .App-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .upload-area {
+    min-height: 200px;
+  }
+  
+  .upload-placeholder {
+    padding: 1rem;
+  }
+  
+  .upload-icon {
+    font-size: 2.5rem;
+  }
+  
+  .upload-placeholder p {
+    font-size: 1rem;
+  }
+  
+  .predict-btn {
+    padding: 0.7rem 1.2rem;
+    font-size: 1rem;
+  }
+  
+  .predicted-digit {
+    font-size: 3rem;
+  }
+}
