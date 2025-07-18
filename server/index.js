@@ -2,7 +2,7 @@
 const express = require('express');      // Express Webフレームワーク
 const cors = require('cors');            // CORS（Cross-Origin Resource Sharing）対応
 const path = require('path');            // ファイルパス操作
-require('dotenv').config();              // 環境変数の読み込み
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') }); // 環境変数の読み込み
 
 // 予測API用のルートをインポート
 const predictRoute = require('./routes/predict');

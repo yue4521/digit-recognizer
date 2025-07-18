@@ -50,20 +50,23 @@ function callPythonScript(imagePath) {
   return new Promise((resolve, reject) => {
     // Pythonスクリプトのパスを設定
     const pythonScriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
-    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
     
-    // 仮想環境のPythonパスを設定
-    const venvPython = path.join(__dirname, '..', '..', 'venv', 'bin', 'python3');
-    const venvPythonWin = path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe');
+    // 環境変数またはデフォルトのPythonパスを使用
+    let pythonPath = process.env.PYTHON_PATH || 'python3';
     
-    let pythonPath = pythonCommand;
-    
-    // 仮想環境のPythonを使用しようとする
-    if (process.platform === 'win32') {
-      pythonPath = venvPythonWin;  // Windows用
-    } else {
-      pythonPath = venvPython;     // macOS/Linux用
+    // 相対パスの場合は絶対パスに変換
+    if (!path.isAbsolute(pythonPath)) {
+      pythonPath = path.join(__dirname, '..', '..', pythonPath);
     }
+    
+    // プラットフォーム別のフォールバック
+    if (process.platform === 'win32') {
+      const venvPythonWin = path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe');
+      pythonPath = venvPythonWin;
+    }
+    
+    console.log(`Python実行パス: ${pythonPath}`);
+    console.log(`Pythonスクリプトパス: ${pythonScriptPath}`);
     
     // Pythonプロセスを起動
     const pythonProcess = spawn(pythonPath, [pythonScriptPath, imagePath]);
