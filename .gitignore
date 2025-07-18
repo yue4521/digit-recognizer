@@ -50,11 +50,12 @@ MANIFEST
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# ML models and data
-*.pkl
+# ML models and data (exclude essential models)
 *.joblib
 *.h5
 *.model
+# Allow essential ML model files
+!ml/svm_model.pkl
 
 # Temporary files
 temp/
