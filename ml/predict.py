@@ -140,10 +140,14 @@ def predict_digit(image_path):
         confidence_scores = clf.decision_function(image_features)[0]
         max_confidence = np.max(confidence_scores)
         
+        # 信頼度を0-1の範囲に正規化
+        # SVMのdecision_functionは正規化されていないので、適切な範囲に変換
+        normalized_confidence = 1.0 / (1.0 + np.exp(-max_confidence))
+        
         # 結果を辞書形式で返却
         return {
-            "digit": int(prediction),           # 予測された数字
-            "confidence": float(max_confidence) # 信頼度スコア
+            "digit": int(prediction),                    # 予測された数字
+            "confidence": float(normalized_confidence)   # 0-1の範囲に正規化された信頼度
         }
         
     except Exception as e:
