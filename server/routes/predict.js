@@ -118,18 +118,27 @@ const upload = multer({
   }
 });
 
-// 許可されたPython実行パスのホワイトリスト
-const ALLOWED_PYTHON_PATHS = [
-  'python3',
-  'python',
-  '/usr/bin/python3',
-  '/usr/bin/python',
-  '/usr/local/bin/python3',
-  '/usr/local/bin/python',
-  // 仮想環境のパス
-  path.join(__dirname, '..', '..', 'venv', 'bin', 'python'),
-  path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe')
-];
+// 許可されたPython実行パスのホワイトリスト（動的に環境変数からも追加）
+function getAllowedPythonPaths() {
+  const basePaths = [
+    'python3',
+    'python',
+    '/usr/bin/python3',
+    '/usr/bin/python',
+    '/usr/local/bin/python3',
+    '/usr/local/bin/python',
+    // 仮想環境のパス
+    path.join(__dirname, '..', '..', 'venv', 'bin', 'python'),
+    path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe')
+  ];
+  
+  // 環境変数で指定されたPythonパスを追加
+  if (process.env.PYTHON_PATH) {
+    basePaths.push(process.env.PYTHON_PATH);
+  }
+  
+  return basePaths;
+}
 
 /**
  * Python実行パスをセキュアに検証・取得します
@@ -151,8 +160,11 @@ function getSecurePythonPath() {
     pythonPath = path.resolve(__dirname, '..', '..', pythonPath);
   }
   
+  // 動的ホワイトリストを取得
+  const allowedPaths = getAllowedPythonPaths();
+  
   // ホワイトリストチェック
-  const isAllowed = ALLOWED_PYTHON_PATHS.some(allowedPath => {
+  const isAllowed = allowedPaths.some(allowedPath => {
     const normalizedAllowed = path.resolve(allowedPath);
     return path.resolve(pythonPath) === normalizedAllowed;
   });

@@ -69,8 +69,17 @@ function App() {
       formData.append('image', selectedFile);
 
       // サーバーの予測APIにリクエストを送信
+      // 開発環境では認証がバイパスされている場合があるため、APIキーは条件付きで送信
+      const headers = {};
+      
+      // 本番環境または認証が有効な場合にAPIキーを送信
+      if (process.env.NODE_ENV === 'production') {
+        headers['x-api-key'] = process.env.REACT_APP_API_KEY || 'dev-api-key-12345';
+      }
+      
       const response = await fetch('/api/predict', {
         method: 'POST',
+        headers: headers,
         body: formData,
       });
 

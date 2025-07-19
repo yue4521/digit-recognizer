@@ -27,10 +27,21 @@ const AUTH_CONFIG = {
 const rateLimitStore = new Map();
 
 /**
- * APIキー認証ミドルウェア
+ * APIキー認証ミドルウェア（開発環境でのバイパス機能付き）
  */
 function authenticateAPIKey(req, res, next) {
   try {
+    // 開発環境での認証バイパスチェック
+    if (process.env.NODE_ENV === 'development' && process.env.DISABLE_AUTH === 'true') {
+      console.log(`開発環境: 認証をバイパス - ${req.ip} - ${new Date().toISOString()}`);
+      req.auth = {
+        apiKey: 'dev-bypass',
+        timestamp: new Date(),
+        bypassed: true
+      };
+      return next();
+    }
+    
     // APIキーを取得（ヘッダーまたはクエリパラメータから）
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
     
