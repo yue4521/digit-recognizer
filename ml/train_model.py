@@ -77,7 +77,7 @@ def train_svm_model():
     # scikit-learnからMNISTデータセットを読み込み
     # MNISTは70,000枚の手書き数字画像のデータセット
     try:
-        mnist = datasets.fetch_openml('mnist_784', version=1, parser='auto')
+        mnist = datasets.fetch_openml('mnist_784', version=1, as_frame=False, parser='liac-arff')
     except Exception as e:
         if "SSL" in str(e) or "certificate" in str(e):
             print(f"SSL証明書エラーが発生しました: {e}")
@@ -89,7 +89,7 @@ def train_svm_model():
                 ssl._create_default_https_context = ssl._create_unverified_context
             
             try:
-                mnist = datasets.fetch_openml('mnist_784', version=1, parser='auto')
+                mnist = datasets.fetch_openml('mnist_784', version=1, as_frame=False, parser='liac-arff')
                 print("代替方法でデータセットの取得に成功しました。")
             except Exception as e2:
                 print(f"データセット取得に失敗しました: {e2}")
