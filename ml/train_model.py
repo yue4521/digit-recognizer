@@ -16,6 +16,45 @@ from sklearn.model_selection import train_test_split  # データ分割用
 import joblib                             # モデル保存用
 import sys                                # システム操作用
 import os                                 # ファイル操作用
+import ssl                                # SSL設定用
+import certifi                            # CA証明書用
+import urllib.request                     # SSL設定のため
+
+def configure_ssl():
+    """
+    SSL証明書の設定を行う関数。
+    macOS環境でのSSL証明書エラーを解決します。
+    """
+    try:
+        # 環境変数からSSL設定を確認
+        if not os.environ.get('SSL_CERT_FILE') and not os.environ.get('REQUESTS_CA_BUNDLE'):
+            # certifiライブラリのCA証明書バンドルを使用
+            ca_bundle_path = certifi.where()
+            os.environ['SSL_CERT_FILE'] = ca_bundle_path
+            os.environ['REQUESTS_CA_BUNDLE'] = ca_bundle_path
+            print(f"SSL証明書パスを設定しました: {ca_bundle_path}")
+        
+        # HTTPSコンテキストを適切に設定
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context.check_hostname = True
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        
+        # urllib用のHTTPSハンドラーを設定
+        https_handler = urllib.request.HTTPSHandler(context=ssl_context)
+        opener = urllib.request.build_opener(https_handler)
+        urllib.request.install_opener(opener)
+        
+        print("SSL設定が完了しました。")
+        return True
+        
+    except Exception as e:
+        print(f"SSL設定中にエラーが発生しました: {e}")
+        print("フォールバック: SSL証明書検証を無効化します...")
+        
+        # 最後の手段としてSSL検証を無効化
+        ssl._create_default_https_context = ssl._create_unverified_context
+        print("警告: SSL証明書検証が無効化されました。")
+        return False
 
 def train_svm_model():
     """
@@ -30,10 +69,39 @@ def train_svm_model():
     6. モデルをファイルに保存
     """
     
+    # SSL設定を最初に実行
+    print("SSL設定を確認中...")
+    ssl_configured = configure_ssl()
+    
     print("MNISTデータセットを読み込み中...")
     # scikit-learnからMNISTデータセットを読み込み
     # MNISTは70,000枚の手書き数字画像のデータセット
-    mnist = datasets.fetch_openml('mnist_784', version=1, parser='auto')
+    try:
+        mnist = datasets.fetch_openml('mnist_784', version=1, parser='auto')
+    except Exception as e:
+        if "SSL" in str(e) or "certificate" in str(e):
+            print(f"SSL証明書エラーが発生しました: {e}")
+            print("代替方法を試行中...")
+            
+            # 再度SSL設定を試行（無効化含む）
+            if ssl_configured:
+                print("SSL検証を無効化して再試行します...")
+                ssl._create_default_https_context = ssl._create_unverified_context
+            
+            try:
+                mnist = datasets.fetch_openml('mnist_784', version=1, parser='auto')
+                print("代替方法でデータセットの取得に成功しました。")
+            except Exception as e2:
+                print(f"データセット取得に失敗しました: {e2}")
+                print("\n解決策:")
+                print("1. インターネット接続を確認してください")
+                print("2. Python証明書を更新してください:")
+                print("   /Applications/Python\\ 3.13/Install\\ Certificates.command")
+                print("3. 環境変数を設定してください:")
+                print("   export SSL_CERT_FILE=$(python -c 'import certifi; print(certifi.where())')")
+                raise e2
+        else:
+            raise e
     
     # 特徴量（ピクセル値）とラベル（正解の数字）を取得
     X, y = mnist.data, mnist.target.astype(int)

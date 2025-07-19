@@ -5,6 +5,9 @@ Pillow>=11.0.0
 scikit-learn>=1.5.0
 joblib>=1.3.0
 
+# SSL証明書用ライブラリ
+certifi>=2024.7.4
+
 # 開発・品質管理用ツール
 flake8>=6.0.0
 black>=23.0.0

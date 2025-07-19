@@ -18,7 +18,8 @@
     "format": "npm run format --prefix client",
     "format:check": "npm run format:check --prefix client",
     "lint:python": "cd ml && flake8 .",
-    "format:python": "cd ml && black . && isort ."
+    "format:python": "cd ml && black . && isort .",
+    "ssl-fix": "bash scripts/ssl-fix.sh"
   },
   "keywords": ["digit", "recognition", "ml", "react", "nodejs", "svm"],
   "author": "",
