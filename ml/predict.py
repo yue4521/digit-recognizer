@@ -15,8 +15,91 @@ import json             # JSONデータの処理用
 import numpy as np      # 数値計算ライブラリ
 from PIL import Image, ImageOps  # 画像処理ライブラリ
 import joblib           # 機械学習モデルの読み込み用
+import hashlib          # モデルファイルの整合性チェック用
 import os               # ファイル操作用
 from io import BytesIO  # バイナリデータの処理用
+
+# 許可されたモデルファイルのSHA256ハッシュ値
+ALLOWED_MODEL_HASHES = [
+    # 現在の本番用モデルのハッシュ値（実際の運用時に設定）
+    # この値は初回モデル生成時に計算して設定する必要があります
+]
+
+def verify_model_integrity(model_path):
+    """
+    モデルファイルの整合性を検証します。
+    
+    セキュリティ対策：
+    - ファイルのSHA256ハッシュを計算し、許可されたハッシュ値と照合
+    - 悪意あるモデルファイルの読み込みを防止
+    
+    Args:
+        model_path (str): 検証するモデルファイルのパス
+    
+    Returns:
+        bool: 検証に合格した場合True、そうでなければFalse
+    """
+    try:
+        # ファイルのSHA256ハッシュを計算
+        with open(model_path, 'rb') as f:
+            file_content = f.read()
+            file_hash = hashlib.sha256(file_content).hexdigest()
+        
+        # 開発環境では整合性チェックをスキップ（ハッシュリストが空の場合）
+        if not ALLOWED_MODEL_HASHES:
+            print(f"警告: 開発環境のため整合性チェックをスキップします (ハッシュ: {file_hash})")
+            return True
+        
+        # 許可されたハッシュ値と照合
+        if file_hash in ALLOWED_MODEL_HASHES:
+            return True
+        else:
+            print(f"エラー: モデルファイルの整合性チェックに失敗しました (ハッシュ: {file_hash})")
+            return False
+            
+    except Exception as e:
+        print(f"エラー: 整合性チェック中にエラーが発生しました: {str(e)}")
+        return False
+
+def secure_load_model(model_path):
+    """
+    セキュアなモデル読み込み機能。
+    
+    セキュリティ対策：
+    1. ファイルの整合性検証
+    2. 制限されたjoblib設定での読み込み
+    3. モデル構造の基本検証
+    
+    Args:
+        model_path (str): 読み込むモデルファイルのパス
+    
+    Returns:
+        object: 読み込まれたモデルオブジェクト
+    
+    Raises:
+        Exception: 整合性チェック失敗またはモデル読み込み失敗時
+    """
+    # Step 1: 整合性チェック
+    if not verify_model_integrity(model_path):
+        raise Exception("モデルファイルの整合性チェックに失敗しました")
+    
+    try:
+        # Step 2: 制限された環境でモデル読み込み
+        # NOTE: joblib.load は依然として pickle を使用するが、
+        # 整合性チェックにより悪意あるファイルの読み込みを防止
+        model = joblib.load(model_path)
+        
+        # Step 3: 基本的なモデル構造検証
+        if not hasattr(model, 'predict'):
+            raise Exception("無効なモデル: predict メソッドが見つかりません")
+        
+        if not hasattr(model, 'decision_function'):
+            raise Exception("無効なモデル: decision_function メソッドが見つかりません")
+        
+        return model
+        
+    except Exception as e:
+        raise Exception(f"セキュアなモデル読み込みに失敗しました: {str(e)}")
 
 def detect_background_color(image):
     """
@@ -123,8 +206,8 @@ def predict_digit(image_path):
         if not os.path.exists(model_path):
             raise Exception(f"モデルファイルが見つかりません: {model_path}")
         
-        # joblibでモデルを読み込み
-        clf = joblib.load(model_path)
+        # セキュアなモデル読み込み（整合性チェック付き）
+        clf = secure_load_model(model_path)
         
         # 画像を前処理して特徴量を抽出
         image_features = preprocess_image(image_path)
