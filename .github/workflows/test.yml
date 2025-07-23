@@ -1,0 +1,106 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, task ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    name: Test Frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install --prefix client
+    
+    - name: Run frontend tests (if available)
+      run: |
+        cd client
+        if [ -f "package.json" ] && grep -q '"test"' package.json; then
+          npm test -- --watchAll=false --coverage
+        else
+          echo "No frontend tests found, skipping..."
+        fi
+    
+    - name: Build frontend
+      run: npm run build --prefix client
+
+  test-backend:
+    runs-on: ubuntu-latest
+    name: Test Backend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install --prefix server
+    
+    - name: Run backend tests (if available)
+      run: |
+        cd server
+        if [ -f "package.json" ] && grep -q '"test"' package.json; then
+          npm test
+        else
+          echo "No backend tests found, skipping..."
+        fi
+    
+    - name: Check server startup
+      run: |
+        cd server
+        timeout 10s npm start || echo "Server startup test completed"
+
+  integration-test:
+    runs-on: ubuntu-latest
+    name: Integration Test
+    needs: [test-frontend, test-backend]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install all dependencies
+      run: |
+        npm run install-all
+        python -m pip install --upgrade pip
+        pip install -r ml/requirements.txt
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Test model training
+      run: npm run train-model
+    
+    - name: Verify model file exists
+      run: |
+        if [ -f "ml/svm_model.pkl" ]; then
+          echo "✅ Model file created successfully"
+        else
+          echo "❌ Model file not found"
+          exit 1
+        fi

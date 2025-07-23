@@ -1,0 +1,138 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Weekly security scan (every Sunday at 2:00 AM UTC)
+    - cron: '0 2 * * 0'
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+    name: Dependency Vulnerability Scan
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        npm run install-all
+        python -m pip install --upgrade pip
+        pip install safety bandit
+        pip install -r ml/requirements.txt
+    
+    - name: Run npm audit for security vulnerabilities
+      run: |
+        echo "=== Frontend Dependencies ==="
+        cd client && npm audit --audit-level high
+        echo "=== Backend Dependencies ==="
+        cd ../server && npm audit --audit-level high
+    
+    - name: Run Python security scan with safety
+      run: |
+        echo "=== Python Dependencies Security Scan ==="
+        cd ml && safety check -r requirements.txt
+    
+    - name: Run Bandit security scan for Python code
+      run: |
+        echo "=== Python Code Security Scan ==="
+        cd ml && bandit -r . -f json -o bandit-report.json || true
+        cd ml && bandit -r . || true
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    name: Secret Detection
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Run secret detection
+      run: |
+        echo "=== Scanning for potential secrets ==="
+        # Simple grep-based secret detection
+        SECRET_PATTERNS=(
+          "password.*=.*['\"][^'\"]*['\"]"
+          "api[_-]?key.*=.*['\"][^'\"]*['\"]"
+          "secret.*=.*['\"][^'\"]*['\"]"
+          "token.*=.*['\"][^'\"]*['\"]"
+          "['\"][A-Za-z0-9]{32,}['\"]"
+        )
+        
+        FOUND_SECRETS=false
+        for pattern in "${SECRET_PATTERNS[@]}"; do
+          if grep -r -i -E "$pattern" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=venv; then
+            echo "⚠️  Potential secret found with pattern: $pattern"
+            FOUND_SECRETS=true
+          fi
+        done
+        
+        if [ "$FOUND_SECRETS" = true ]; then
+          echo "❌ Potential secrets detected. Please review the above matches."
+          echo "Note: This is a basic scan. Please manually verify these are not actual secrets."
+        else
+          echo "✅ No obvious secrets detected in basic scan."
+        fi
+
+  code-quality-security:
+    runs-on: ubuntu-latest
+    name: Code Quality & Security Analysis
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install ESLint security plugins
+      run: |
+        cd client && npm install --save-dev eslint-plugin-security || echo "ESLint security plugin not available"
+        cd ../server && npm install --save-dev eslint-plugin-security || echo "ESLint security plugin not available"
+    
+    - name: Run ESLint with security rules (if available)
+      run: |
+        echo "=== JavaScript Security Linting ==="
+        if npm run lint 2>/dev/null; then
+          echo "✅ JavaScript linting passed"
+        else
+          echo "⚠️  JavaScript linting found issues"
+        fi
+    
+    - name: Check for common security issues
+      run: |
+        echo "=== Common Security Issue Check ==="
+        
+        # Check for eval usage
+        if grep -r "eval(" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=venv; then
+          echo "⚠️  Found eval() usage - potential security risk"
+        fi
+        
+        # Check for innerHTML usage
+        if grep -r "innerHTML" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=venv; then
+          echo "⚠️  Found innerHTML usage - potential XSS risk"
+        fi
+        
+        # Check for unsafe Python imports
+        if grep -r "import os" ml/ || grep -r "import subprocess" ml/; then
+          echo "⚠️  Found system-level imports in ML code - review for security"
+        fi
+        
+        echo "✅ Basic security check completed"

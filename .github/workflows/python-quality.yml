@@ -1,0 +1,95 @@
+name: Python Quality Checks
+
+on:
+  push:
+    branches: [ main, task ]
+    paths: ['ml/**']
+  pull_request:
+    branches: [ main ]
+    paths: ['ml/**']
+
+jobs:
+  python-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
+    
+    name: Python ${{ matrix.python-version }} Quality Check
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort mypy pytest
+        pip install -r ml/requirements.txt
+    
+    - name: Lint with flake8
+      run: |
+        cd ml
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Check code formatting with black
+      run: |
+        cd ml
+        black --check --diff .
+    
+    - name: Check import sorting with isort
+      run: |
+        cd ml
+        isort --check-only --diff .
+    
+    - name: Type checking with mypy (if configured)
+      run: |
+        cd ml
+        if [ -f "mypy.ini" ] || [ -f "pyproject.toml" ]; then
+          mypy .
+        else
+          echo "No mypy configuration found, skipping type checking"
+        fi
+    
+    - name: Run tests (if available)
+      run: |
+        cd ml
+        if [ -f "test_*.py" ] || [ -d "tests" ]; then
+          pytest -v
+        else
+          echo "No tests found, skipping pytest"
+        fi
+    
+    - name: Test model training
+      run: |
+        cd ml
+        python train_model.py
+        if [ -f "svm_model.pkl" ]; then
+          echo "✅ Model training successful"
+        else
+          echo "❌ Model training failed"
+          exit 1
+        fi
+    
+    - name: Test model prediction
+      run: |
+        cd ml
+        python -c "
+        import pickle
+        import numpy as np
+        from predict import predict_digit
+        
+        # Test with dummy data
+        test_data = np.random.rand(1, 28, 28)
+        try:
+            result = predict_digit(test_data)
+            print(f'✅ Prediction test successful: {result}')
+        except Exception as e:
+            print(f'❌ Prediction test failed: {e}')
+            exit(1)
+        "

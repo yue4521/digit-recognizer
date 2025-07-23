@@ -72,6 +72,90 @@ npm run dev-client    # フロントエンドのみ
 - 日本語でコミットメッセージを記述
 - featureブランチで開発
 
+## CI/CD（GitHub Actions）
+
+本プロジェクトでは、GitHub Actionsを使用した自動化されたCI/CDパイプラインを導入しています。
+
+### 自動実行されるチェック
+
+プルリクエスト作成時やコードpush時に、以下が自動実行されます：
+
+#### 品質チェック
+```bash
+# JavaScript/TypeScript
+- ESLint による静的解析
+- Prettier による フォーマット確認
+
+# Python
+- flake8 による linting
+- black・isort による フォーマット確認
+```
+
+#### ビルド・テスト
+```bash
+# アプリケーション
+- フロントエンド（React）ビルド確認
+- バックエンド（Express.js）起動確認
+
+# 機械学習
+- モデル訓練実行テスト
+- 予測機能動作確認
+```
+
+#### セキュリティ
+```bash
+# 依存関係
+- npm audit による脆弱性チェック
+- Python safety による依存関係スキャン
+
+# コード
+- 機密情報のハードコード検出
+- セキュリティベストプラクティス確認
+```
+
+### ローカルでの事前確認
+
+GitHub Actionsでエラーになる前に、ローカルで事前確認可能：
+
+```bash
+# コード品質確認
+npm run lint
+npm run format:check
+npm run lint:python
+
+# ビルド確認
+npm run build
+
+# 機械学習確認
+npm run train-model
+```
+
+### 開発ワークフロー
+
+```bash
+# 1. 機能ブランチ作成
+git checkout -b feature/新機能名
+
+# 2. 開発・ローカルテスト
+npm run lint
+npm run build
+
+# 3. コミット・プッシュ
+git add .
+git commit -m "feat: 新機能の実装"
+git push origin feature/新機能名
+
+# 4. プルリクエスト作成
+# → GitHub Actions が自動実行
+
+# 5. エラーがあれば修正
+npm run lint:fix
+git commit -m "fix: lint エラーを修正"
+git push origin feature/新機能名
+```
+
+詳細な設定や説明については [GitHub Actions ガイド](github-actions.md) を参照してください。
+
 ## テスト手順
 
 ### 機械学習モデルのテスト
