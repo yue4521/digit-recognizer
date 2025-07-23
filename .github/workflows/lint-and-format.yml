@@ -3,9 +3,9 @@ name: Lint and Format
 
 on:
   push:
-    branches: [main, task]
+    branches: [main, master, task]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   lint-js:

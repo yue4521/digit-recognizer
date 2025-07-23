@@ -2,10 +2,10 @@ name: Python Quality Checks
 
 on:
   push:
-    branches: [ main, task ]
+    branches: [ main, master, task ]
     paths: ['ml/**']
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
     paths: ['ml/**']
 
 jobs:
