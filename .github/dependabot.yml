@@ -1,0 +1,69 @@
+version: 2
+updates:
+  # ルートレベルのnpm依存関係
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    assignees:
+      - "@me"
+    reviewers:
+      - "@me"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(deps):"
+      include: "scope"
+
+  # クライアント側のnpm依存関係
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    assignees:
+      - "@me"
+    reviewers:
+      - "@me"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(deps):"
+      include: "scope"
+
+  # サーバー側のnpm依存関係
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    assignees:
+      - "@me"
+    reviewers:
+      - "@me"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(deps):"
+      include: "scope"
+
+  # Python (ML) 依存関係
+  - package-ecosystem: "pip"
+    directory: "/ml"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    assignees:
+      - "@me"
+    reviewers:
+      - "@me"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(deps):"
+      include: "scope"
