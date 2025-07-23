@@ -21,7 +21,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
     
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -30,7 +29,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        npm run install-all
+        npm install --prefix server --no-optional
+        npm install --prefix client --no-optional
         python -m pip install --upgrade pip
         pip install safety bandit
         pip install -r ml/requirements.txt
@@ -100,7 +100,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
     
     - name: Install ESLint security plugins
       run: |
