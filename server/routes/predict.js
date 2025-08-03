@@ -89,10 +89,15 @@ async function cleanupFile(filePath) {
   try {
     // Ensure the file is within the upload directory
     const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(path.resolve(UPLOAD_DIR) + path.sep)) {
+    const resolvedUploadDir = path.resolve(UPLOAD_DIR);
+    const relativePath = path.relative(resolvedUploadDir, resolvedPath);
+    
+    // Check if the path is outside the upload directory (starts with '..' or is absolute)
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       console.warn(`警告: アップロードディレクトリ外のファイル削除要求: ${resolvedPath}`);
       return;
     }
+    
     await fs.unlink(resolvedPath);
   } catch (error) {
     console.error('ファイルの清掃エラー:', error.message);
