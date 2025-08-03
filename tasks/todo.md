@@ -157,11 +157,76 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - 既存ドキュメント（10個のMarkdownファイル）のWeb公開対応
 - GitHub Pagesでのドキュメントサイト自動デプロイ機能
 
+## VSCode GitHub Actions YAML誤検出対応（2025-08-03）
+
+### 問題の概要
+- VSCodeでdocs.yaml内の`environment: github-pages`が「is not valid」エラーとして誤検出される
+- GitHub Actionsでは正常に動作するが、開発者エクスペリエンスに影響
+
+### 根本原因
+- VSCodeのYAMLスキーマ検証での既知の問題
+- github-pages環境は公式にサポートされているが、一部のスキーマ定義で不完全
+
+### 実装した解決策
+
+#### 1. VSCodeワークスペース設定（.vscode/settings.json）
+```json
+{
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.{yml,yaml}"
+    },
+    "yaml.validate": true,
+    "yaml.completion": true,
+    "files.associations": {
+        "*.yml": "yaml",
+        "*.yaml": "yaml"
+    }
+}
+```
+
+#### 2. Schema Override指定（docs.yaml）
+- ファイル先頭にschema指定コメント追加
+- VSCodeに正しいYAMLスキーマを明示的に指示
+
+#### 3. 詳細な説明コメント追加
+- 誤検出であることの明確な説明
+- github-pages環境の正当性を技術的に明記
+
+### 技術的詳細
+- **github-pages環境**: GitHub公式サポートの標準環境名
+- **SchemaStore**: 公式JSONスキーマによる正確な検証
+- **チーム共有**: .vscode/settings.jsonによる統一設定
+
+### 成果
+- VSCodeでの誤検出警告の解決
+- 開発チーム全体での一貫したYAML検証環境
+- GitHub Actionsワークフローの信頼性確保
+
+## Review - VSCode YAML誤検出対応完了
+
+### 実施した作業
+1. **VSCodeワークスペース設定の構築**
+   - 正確なYAMLスキーママッピングの設定
+   - GitHub Actions用の適切な検証ルール適用
+
+2. **Schema Override実装**
+   - docs.yamlファイルへの明示的スキーマ指定
+   - 誤検出回避のためのコメント強化
+
+3. **技術文書化**
+   - 問題の根本原因と解決策の詳細記録
+   - 将来のメンテナンス性確保
+
+### 技術的成果
+- VSCodeでのGitHub Actions YAML検証の正常化
+- 開発者エクスペリエンスの改善
+- プロジェクト全体での統一的な設定管理
+
 ## 技術スタック
 
 - **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
 - **バックエンド**: Node.js, Express.js, Multer（ファイルアップロード）
 - **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
-- **開発ツール**: ESLint, Prettier, nodemon
+- **開発ツール**: ESLint, Prettier, nodemon, VSCode（YAML検証）
 - **CI/CD**: GitHub Actions, GitHub Pages（ドキュメント公開）

@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Documentation
+on:
+  push:
+    branches: [main]       # main へ push 時に公開
+  pull_request:            # PR では生成のみ（デプロイなし）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write          # deploy-pages に必要
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # Markdownファイルベースのドキュメントサイト構築
+      - name: Build documentation site
+        run: |
+          mkdir -p site
+          
+          # メインページの作成
+          cat > site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Digit Recognizer - Documentation</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; line-height: 1.6; }
+                  .container { max-width: 800px; margin: 0 auto; }
+                  h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                  .nav { background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; }
+                  .nav ul { list-style: none; padding: 0; }
+                  .nav li { margin: 10px 0; }
+                  .nav a { text-decoration: none; color: #0366d6; }
+                  .nav a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Digit Recognizer Documentation</h1>
+                  <p>数字認識アプリケーションのドキュメントサイトです。</p>
+                  
+                  <div class="nav">
+                      <h2>ドキュメント一覧</h2>
+                      <ul>
+                          <li><a href="installation.html">インストールガイド</a></li>
+                          <li><a href="api.html">API仕様</a></li>
+                          <li><a href="architecture.html">システム構成</a></li>
+                          <li><a href="development.html">開発ガイド</a></li>
+                          <li><a href="ml-details.html">機械学習詳細</a></li>
+                          <li><a href="security.html">セキュリティ</a></li>
+                          <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+                          <li><a href="browser-support.html">ブラウザサポート</a></li>
+                          <li><a href="contributing.html">コントリビューションガイド</a></li>
+                          <li><a href="quick-reference.html">クイックリファレンス</a></li>
+                      </ul>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      # 各Markdownファイルを基本的なHTMLに変換
+      - name: Convert Markdown to HTML
+        run: |
+          # 各ドキュメントファイルをシンプルなHTMLに変換
+          for md_file in docs/*.md; do
+            if [ -f "$md_file" ]; then
+              filename=$(basename "$md_file" .md)
+              cat > "site/${filename}.html" << EOF
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${filename} - Digit Recognizer</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; line-height: 1.6; }
+                  .container { max-width: 800px; margin: 0 auto; }
+                  h1, h2, h3 { color: #333; }
+                  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+                  pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                  .back-link { margin-bottom: 20px; }
+                  .back-link a { text-decoration: none; color: #0366d6; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="back-link"><a href="index.html">← ドキュメント一覧に戻る</a></div>
+                  <pre>
+          EOF
+              cat "$md_file" >> "site/${filename}.html"
+              cat >> "site/${filename}.html" << EOF
+                  </pre>
+              </div>
+          </body>
+          </html>
+          EOF
+            fi
+          done
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    needs: build-docs
+    if: github.ref == 'refs/heads/main'   # main のみ
+    runs-on: ubuntu-latest
+    # VSCodeで「github-pages is not valid」エラーが表示されるが、これはschema validation の誤検出
+    # 実際のGitHub Actionsでは正常に動作する
+    # github-pages環境は公式にサポートされている標準環境名
+    environment: github-pages
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
