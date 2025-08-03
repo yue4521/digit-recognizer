@@ -12,6 +12,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 18, cache: 'npm' }
       - run: npm ci
+      - run: npm ci --prefix client
+      - run: npm ci --prefix server
       # - run: npm run lint  # 一時的に無効化（ESLint v9設定の問題）
       # - run: npm test -- --ci  # 一時的に無効化（testスクリプトが定義されていない）
       - run: npm run build --if-present
