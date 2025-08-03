@@ -56,9 +56,8 @@ MANIFEST
 # ML models and data (exclude essential models)
 *.joblib
 *.h5
+*.pkl
 *.model
-# Allow essential ML model files
-!ml/svm_model.pkl
 
 # Temporary files
 temp/
