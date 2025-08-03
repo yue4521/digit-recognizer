@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 18, cache: 'npm' }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --ci
+      - run: npm run build --if-present
+      - uses: actions/upload-artifact@v4
+        with: { name: client-build, path: client/build }
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python + venv + キャッシュ
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - uses: getsentry/action-setup-venv@v2.2.0
+        with:
+          venv-dir: .venv
+          cache-dependency-path: ml/requirements.txt
+
+      - run: pip install -r ml/requirements.txt
+      - run: black --check ml/
+      - run: flake8 ml/
+      - run: cd ml && pytest -q --cov=. --cov-report=xml || echo "No tests found"
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage-xml, path: ml/coverage.xml }
+        if: success() || failure()

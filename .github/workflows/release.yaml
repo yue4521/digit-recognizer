@@ -1,0 +1,43 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node side
+      - uses: actions/setup-node@v4
+        with: { node-version: 18, cache: 'npm' }
+      - run: npm ci
+      - run: npm run build
+      - run: cd client && zip -r ../client_build.zip build
+
+      # Python side (if pyproject.toml exists)
+      - name: Check for pyproject.toml
+        id: check_pyproject
+        run: |
+          if [ -f "pyproject.toml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Warning: pyproject.toml not found. Skipping Python wheel build."
+          fi
+      
+      - uses: actions/setup-python@v5
+        if: steps.check_pyproject.outputs.exists == 'true'
+        with: { python-version: '3.11' }
+      - run: pip install build
+        if: steps.check_pyproject.outputs.exists == 'true'
+      - run: python -m build -w -o dist
+        if: steps.check_pyproject.outputs.exists == 'true'
+      # GitHub Release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            client_build.zip
+            dist/*.whl
