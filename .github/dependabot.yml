@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # Root directory Python packages
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -15,6 +16,63 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "security"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ML directory Python packages (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/ml"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "yue4521"
+    assignees:
+      - "yue4521"
+    commit-message:
+      prefix: "deps(ml)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ml"
+      - "python"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "security"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Root directory npm packages
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -30,3 +88,87 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    labels:
+      - "dependencies"
+      - "javascript"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "security"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Client directory npm packages
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "yue4521"
+    assignees:
+      - "yue4521"
+    commit-message:
+      prefix: "deps(client)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "javascript"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "security"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Server directory npm packages
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "yue4521"
+    assignees:
+      - "yue4521"
+    commit-message:
+      prefix: "deps(server)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "javascript"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "security"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
