@@ -114,6 +114,41 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - セキュアな画像アップロード機能の実装
 - プロダクションレディなセキュリティ対応の完了
 
+## Automatic Dependency Submission導入作業（2025-08-03）
+
+### 実施した作業
+- [x] GitHub CLI認証状態とリポジトリ設定確認
+- [x] GitHub Web UIでDependency Graph有効化確認
+- [x] Automatic dependency submission機能確認
+- [x] GitHub API経由で設定状況確認
+- [x] 動作確認のためテスト変更とpush
+- [x] Dependency graphとセキュリティ機能の動作確認
+
+### 確認された機能
+1. **Dependency Graph**: 正常に動作中
+   - Node.js/npm依存関係の自動検出
+   - Python/pip依存関係の自動検出
+   - SBOM（Software Bill of Materials）の自動生成
+
+2. **Automatic Dependency Submission**: 既に有効
+   - パブリックリポジトリのため自動で有効化済み
+   - package.json、requirements.txtの変更を自動追跡
+   - 依存関係グラフの自動更新
+
+3. **Dependabotセキュリティアラート**: 正常動作
+   - multerパッケージの4つの脆弱性を検出
+   - すべてのアラートが修正済み（2.0.2にアップグレード済み）
+   - 高重要度のDoS脆弱性（CVE-2025-7338等）を解決
+
+### 検出された依存関係
+- **npm パッケージ**: React 19.1.1, Express 5.1.0, multer 2.0.2等
+- **Python パッケージ**: NumPy ≥2.0.0, scikit-learn ≥1.5.0, Pillow ≥11.0.0等
+
+### セキュリティ効果
+- 脆弱性の早期発見とアラート
+- 依存関係の可視化による供給チェーンセキュリティ向上
+- 自動的なSBOM生成でコンプライアンス要件対応
+
 ## 技術スタック
 
 - **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
@@ -121,3 +156,4 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
 - **開発ツール**: ESLint, Prettier, nodemo
+- **セキュリティ**: GitHub Dependency Graph, Automatic Dependency Submission, Dependabot
