@@ -1,7 +1,7 @@
 name: CodeQL
 on:
   push:
-    branches: [main]
+    branches: [main, test/workflow]
   schedule:
     - cron:  '0 18 * * 4'   # 金曜 03:00 JST
 
