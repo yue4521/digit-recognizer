@@ -1,5 +1,13 @@
 # 手書き数字認識アプリ
 
+[![Version](https://img.shields.io/badge/version-v0.0.1-blue.svg)](https://github.com/user/digit-recognizer/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-19.1.1-61DAFB?logo=react)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-Latest-339933?logo=node.js)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5.1.0-000000?logo=express)](https://expressjs.com/)
+[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
 機械学習を使用して手書き数字（0-9）を認識するフルスタックWebアプリケーションです。
 
 ## 概要

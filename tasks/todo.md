@@ -59,10 +59,24 @@
 4. **メモリリーク対策**: URL.revokeObjectURL()によるクリーンアップ
 5. **useEffectフック**: コンポーネントアンマウント時のクリーンアップ
 
+## READMEバッジ追加作業（2025-08-03）
+
+- [x] プロジェクト情報を分析してバッジに必要な情報を収集
+- [x] 適切なバッジの種類を選定
+- [x] READMEファイルにバッジセクションを追加
+- [x] バッジを適切な順序で配置
+- [ ] 変更をコミット
+
+### 追加予定のバッジ
+
+1. ライセンスバッジ (MIT)
+2. バージョンバッジ (v0.0.1 - git tagを参照)
+3. 技術スタックバッジ (React, Node.js, Python, Express.js)
+4. 言語バッジ (JavaScript, Python)
+
 ## 技術スタック
 - **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
 - **バックエンド**: Node.js, Express.js, Multer（ファイルアップロード）
 - **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
 - **開発ツール**: ESLint, Prettier, nodemo
-
