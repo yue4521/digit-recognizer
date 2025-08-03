@@ -23,10 +23,12 @@ updates:
       - dependency-type: "direct"
       - dependency-type: "indirect"
     groups:
-      security-updates:
+      production-dependencies:
         dependency-type: "production"
         update-types:
-          - "security"
+          - "major"
+          - "minor"
+          - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
@@ -57,10 +59,12 @@ updates:
       - dependency-type: "direct"
       - dependency-type: "indirect"
     groups:
-      security-updates:
+      production-dependencies:
         dependency-type: "production"
         update-types:
-          - "security"
+          - "major"
+          - "minor"
+          - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
@@ -90,10 +94,12 @@ updates:
       - dependency-type: "direct"
       - dependency-type: "indirect"
     groups:
-      security-updates:
+      production-dependencies:
         dependency-type: "production"
         update-types:
-          - "security"
+          - "major"
+          - "minor"
+          - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
@@ -124,10 +130,12 @@ updates:
       - dependency-type: "direct"
       - dependency-type: "indirect"
     groups:
-      security-updates:
+      production-dependencies:
         dependency-type: "production"
         update-types:
-          - "security"
+          - "major"
+          - "minor"
+          - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
@@ -158,10 +166,12 @@ updates:
       - dependency-type: "direct"
       - dependency-type: "indirect"
     groups:
-      security-updates:
+      production-dependencies:
         dependency-type: "production"
         update-types:
-          - "security"
+          - "major"
+          - "minor"
+          - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
