@@ -20,7 +20,7 @@
     "lint:python": "cd ml && flake8 .",
     "format:python": "cd ml && black . && isort ."
   },
-  "keywords": ["digit", "recognition", "ml", "react", "nodejs", "svm"],
+  "keywords": ["digit", "recognition", "ml", "react", "nodejs", "svm", "dependency-submission"],
   "author": "",
   "license": "MIT",
   "devDependencies": {
