@@ -114,10 +114,54 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - セキュアな画像アップロード機能の実装
 - プロダクションレディなセキュリティ対応の完了
 
+## GitHub Actionsワークフロー修正作業（2025-08-03）
+
+### 対応内容
+- [x] ディレクトリ名修正：.github/workflow/ → .github/workflows/
+- [x] TypeScript/TypeDoc関連設定の削除（プロジェクトはJavaScript）
+- [x] Sphinx設定の削除（Pythonドキュメント生成ツール）
+- [x] モノレポ構造対応（client/, server/, ml/）
+- [x] 既存Markdownファイルベースのドキュメント生成に変更
+
+### 修正されたワークフロー仕様
+- **ドキュメント生成**: 既存のMarkdownファイル（docs/*.md）をHTMLサイトに変換
+- **デプロイ**: GitHub Pagesへの自動デプロイ（mainブランチpush時）
+- **動作環境**: Ubuntu Latest, Node.js 18
+- **シンプル化**: 不要な依存関係とビルドステップを除去
+
+### 実装したサイト構造
+1. **インデックスページ**: ドキュメント一覧とナビゲーション
+2. **個別ページ**: 各Markdownファイルをプリフォーマット済みHTMLに変換
+3. **レスポンシブデザイン**: モバイル対応とシンプルなスタイリング
+
+## Review - GitHub Actionsワークフロー修正完了
+
+### 実施した作業
+1. **環境とアプリとの整合性確認**
+   - プロジェクト構造の詳細分析（JavaScript、モノレポ、Markdown）
+   - 既存ワークフローファイルの問題点特定
+
+2. **ワークフロー全面修正**
+   - 正しいディレクトリ構造への移動（.github/workflows/）
+   - TypeScript関連設定の完全削除
+   - Sphinx（Python）設定の削除
+   - プロジェクト実情に合わせたシンプルなMarkdown→HTML変換
+
+3. **品質保証**
+   - YAML構文チェック完了
+   - 既存Markdownファイル存在確認
+   - Git変更管理とセマンティックコミット
+
+### 成果
+- プロジェクト構造に適したGitHub Actionsワークフローの実装
+- 既存ドキュメント（10個のMarkdownファイル）のWeb公開対応
+- GitHub Pagesでのドキュメントサイト自動デプロイ機能
+
 ## 技術スタック
 
 - **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
 - **バックエンド**: Node.js, Express.js, Multer（ファイルアップロード）
 - **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
-- **開発ツール**: ESLint, Prettier, nodemo
+- **開発ツール**: ESLint, Prettier, nodemon
+- **CI/CD**: GitHub Actions, GitHub Pages（ドキュメント公開）
