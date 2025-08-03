@@ -1,0 +1,29 @@
+{
+  "name": "digit-recognizer",
+  "version": "1.0.0",
+  "description": "ReactフロントエンドとNode.jsバックエンドを使用したフルスタック数字認識アプリケーション",
+  "scripts": {
+    "install-all": "npm install --prefix server && npm install --prefix client",
+    "install-python": "pip install -r ml/requirements.txt",
+    "train-model": "cd ml && python3 train_simple_model.py",
+    "dev": "concurrently --kill-others --kill-others-on-fail \"npm run dev --prefix server\" \"npm run start --prefix client\"",
+    "dev:stop": "lsof -ti:3000,5000 | xargs kill -9 2>/dev/null || echo 'No processes found'",
+    "dev-server": "npm run dev --prefix server",
+    "dev-client": "npm run start --prefix client",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "setup": "npm run install-all && npm run install-python && npm run train-model",
+    "lint": "npm run lint --prefix client && npm run lint --prefix server",
+    "lint:fix": "npm run lint:fix --prefix client && npm run lint:fix --prefix server",
+    "format": "npm run format --prefix client",
+    "format:check": "npm run format:check --prefix client",
+    "lint:python": "cd ml && flake8 .",
+    "format:python": "cd ml && black . && isort ."
+  },
+  "keywords": ["digit", "recognition", "ml", "react", "nodejs", "svm"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
