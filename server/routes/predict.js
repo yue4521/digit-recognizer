@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const { spawn } = require('child_process');
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -86,7 +87,18 @@ function callPythonScript(imagePath) {
 
 async function cleanupFile(filePath) {
   try {
-    await fs.unlink(filePath);
+    // Ensure the file is within the upload directory
+    const resolvedPath = path.resolve(filePath);
+    const resolvedUploadDir = path.resolve(UPLOAD_DIR);
+    const relativePath = path.relative(resolvedUploadDir, resolvedPath);
+    
+    // Check if the path is outside the upload directory (starts with '..' or is absolute)
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      console.warn(`警告: アップロードディレクトリ外のファイル削除要求: ${resolvedPath}`);
+      return;
+    }
+    
+    await fs.unlink(resolvedPath);
   } catch (error) {
     console.error('ファイルの清掃エラー:', error.message);
   }
