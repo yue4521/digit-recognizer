@@ -8,7 +8,7 @@ import numpy as np
 from sklearn import svm
 import joblib
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 
 def generate_digit_data():
@@ -31,12 +31,11 @@ def generate_digit_data():
             # 数字の位置とサイズにランダム性を追加
             x_offset = np.random.randint(-2, 3)
             y_offset = np.random.randint(-2, 3)
-            font_size = np.random.randint(16, 22)
 
             try:
                 # システムのデフォルトフォントを使用して数字を描画
                 draw.text((10 + x_offset, 8 + y_offset), str(digit), fill=255)
-            except:
+            except Exception:
                 # フォントが利用できない場合は基本的な形で描画
                 if digit == 0:
                     draw.ellipse(

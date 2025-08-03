@@ -8,7 +8,6 @@ from sklearn import svm
 import joblib
 import os
 from PIL import Image, ImageOps
-import glob
 
 
 def preprocess_image(image_path):

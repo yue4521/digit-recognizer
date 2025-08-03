@@ -3,7 +3,6 @@
 MNISTデータセットで数字認識用のSVMモデルを訓練するスクリプト。
 """
 
-import numpy as np
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
 import joblib
