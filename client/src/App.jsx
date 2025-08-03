@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
@@ -8,15 +8,54 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+
+  // コンポーネントのアンマウント時にURLをクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
   const handleFileSelect = (file) => {
-    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setPrediction(null);
-      setError(null);
-    } else {
-      setError('有効な画像ファイル（JPEGまたはPNG）を選択してください');
+    if (!file) {
+      setError('ファイルが選択されていません');
+      return;
     }
+
+    // MIMEタイプの基本チェック
+    if (!(file.type === 'image/jpeg' || file.type === 'image/png')) {
+      setError('有効な画像ファイル（JPEGまたはPNG）を選択してください');
+      return;
+    }
+
+    // ファイルサイズ制限（10MB）
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      setError('ファイルサイズが大きすぎます（10MB以下にしてください）');
+      return;
+    }
+
+    // FileReaderを使用した安全な画像読み込み
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // 画像が正常に読み込まれた場合のみプレビューを設定
+        setSelectedFile(file);
+        setPreviewUrl(e.target.result);
+        setPrediction(null);
+        setError(null);
+      };
+      img.onerror = () => {
+        setError('無効な画像ファイルです');
+      };
+      img.src = e.target.result;
+    };
+    reader.onerror = () => {
+      setError('ファイルの読み込みに失敗しました');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleFileChange = (e) => {
@@ -82,6 +121,10 @@ function App() {
   };
 
   const handleReset = () => {
+    // メモリリークを防ぐため、前のURLをクリーンアップ
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(null);
     setPreviewUrl(null);
     setPrediction(null);
