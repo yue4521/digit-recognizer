@@ -32,11 +32,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
 
   # ML directory Python packages (pyproject.toml)
   - package-ecosystem: "pip"
