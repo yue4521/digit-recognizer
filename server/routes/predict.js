@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const { spawn } = require('child_process');
 const router = express.Router();
@@ -16,7 +17,10 @@ const storage = multer.diskStorage({
     }
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const timestamp = Date.now();
+    const nanosecond = process.hrtime.bigint();
+    const random = Math.round(Math.random() * 1E9);
+    const uniqueSuffix = `${timestamp}-${nanosecond}-${random}`;
     const ext = path.extname(file.originalname);
     cb(null, `upload-${uniqueSuffix}${ext}`);
   }
@@ -85,7 +89,7 @@ function callPythonScript(imagePath) {
   });
 }
 
-async function cleanupFile(filePath) {
+function cleanupFileSync(filePath) {
   try {
     // Ensure the file is within the upload directory
     const resolvedPath = path.resolve(filePath);
@@ -95,12 +99,21 @@ async function cleanupFile(filePath) {
     // Check if the path is outside the upload directory (starts with '..' or is absolute)
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       console.warn(`警告: アップロードディレクトリ外のファイル削除要求: ${resolvedPath}`);
-      return;
+      return false;
     }
     
-    await fs.unlink(resolvedPath);
+    // Check if file exists before attempting to delete
+    if (fsSync.existsSync(resolvedPath)) {
+      fsSync.unlinkSync(resolvedPath);
+      console.log(`ファイル削除完了: ${path.basename(resolvedPath)}`);
+      return true;
+    } else {
+      console.warn(`ファイルが存在しません: ${resolvedPath}`);
+      return false;
+    }
   } catch (error) {
     console.error('ファイルの清掃エラー:', error.message);
+    return false;
   }
 }
 
@@ -119,6 +132,7 @@ router.post('/predict', upload.single('image'), async (req, res) => {
     
     console.log(`画像を処理中: ${req.file.originalname}`);
     console.log(`ファイルサイズ: ${req.file.size} バイト`);
+    console.log(`一意ファイル名: ${path.basename(uploadedFilePath)}`);
     
     const result = await callPythonScript(uploadedFilePath);
     
@@ -128,11 +142,16 @@ router.post('/predict', upload.single('image'), async (req, res) => {
     
     console.log(`予測結果: ${result.digit} (信頼度: ${result.confidence})`);
     
+    // Clean up the file before sending response to ensure it's deleted
+    const cleanupSuccess = cleanupFileSync(uploadedFilePath);
+    uploadedFilePath = null; // Prevent cleanup in finally block
+    
     res.json({
       success: true,
       prediction: result.digit,
       confidence: result.confidence,
-      filename: req.file.originalname
+      filename: req.file.originalname,
+      fileKey: req.body.fileKey
     });
     
   } catch (error) {
@@ -144,8 +163,9 @@ router.post('/predict', upload.single('image'), async (req, res) => {
     });
     
   } finally {
+    // Only cleanup if not already cleaned up in the try block
     if (uploadedFilePath) {
-      await cleanupFile(uploadedFilePath);
+      cleanupFileSync(uploadedFilePath);
     }
   }
 });

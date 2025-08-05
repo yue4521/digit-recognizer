@@ -8,6 +8,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [fileKey, setFileKey] = useState(0);
+  const [isPredicting, setIsPredicting] = useState(false);
 
   // コンポーネントのアンマウント時にURLをクリーンアップ
   useEffect(() => {
@@ -46,6 +48,8 @@ function App() {
         setPreviewUrl(e.target.result);
         setPrediction(null);
         setError(null);
+        setFileKey(prevKey => prevKey + 1);
+        setIsPredicting(false);
       };
       img.onerror = () => {
         setError('無効な画像ファイルです');
@@ -89,6 +93,11 @@ function App() {
       return;
     }
 
+    if (isPredicting) {
+      return;
+    }
+
+    setIsPredicting(true);
     setLoading(true);
     setError(null);
     setPrediction(null);
@@ -96,6 +105,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
+      formData.append('fileKey', fileKey.toString());
 
       const response = await fetch('/api/predict', {
         method: 'POST',
@@ -108,7 +118,8 @@ function App() {
         setPrediction({
           digit: data.prediction,
           confidence: data.confidence,
-          filename: data.filename
+          filename: data.filename,
+          fileKey: fileKey
         });
       } else {
         setError(data.message || '予測に失敗しました');
@@ -117,6 +128,7 @@ function App() {
       setError('サーバーに接続できませんでした。再試行してください。');
     } finally {
       setLoading(false);
+      setIsPredicting(false);
     }
   };
 
@@ -130,6 +142,8 @@ function App() {
     setPrediction(null);
     setError(null);
     setLoading(false);
+    setIsPredicting(false);
+    setFileKey(prevKey => prevKey + 1);
   };
 
   return (
@@ -182,7 +196,7 @@ function App() {
           <button
             className="predict-btn"
             onClick={handlePredict}
-            disabled={!selectedFile || loading}
+            disabled={!selectedFile || loading || isPredicting}
           >
             {loading ? '予測中...' : '数字を予測'}
           </button>
@@ -204,7 +218,7 @@ function App() {
           </div>
         )}
 
-        {prediction && (
+        {prediction && prediction.fileKey === fileKey && (
           <div className="result-section">
             <div className="result-container">
               <h2>予測結果</h2>
