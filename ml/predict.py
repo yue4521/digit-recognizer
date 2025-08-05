@@ -14,12 +14,14 @@ from io import BytesIO
 
 def detect_background_color(image):
     """
-    画像の四隅から主な背景色（黒または白）を検出します。
+    画像の四隅と縁から主な背景色（黒または白）を検出します。
     """
     if image.mode != 'L':
         image = image.convert('L')
     
     width, height = image.size
+    
+    # 四隅の画素を取得
     corner_pixels = [
         image.getpixel((0, 0)),
         image.getpixel((width-1, 0)),
@@ -27,8 +29,20 @@ def detect_background_color(image):
         image.getpixel((width-1, height-1))
     ]
     
-    avg_corner = np.mean(corner_pixels)
-    return 'white' if avg_corner > 127 else 'black'
+    # 上下左右の縁の画素もサンプリング
+    edge_pixels = []
+    for i in range(0, width, max(1, width//10)):
+        edge_pixels.append(image.getpixel((i, 0)))  # 上縁
+        edge_pixels.append(image.getpixel((i, height-1)))  # 下縁
+    
+    for i in range(0, height, max(1, height//10)):
+        edge_pixels.append(image.getpixel((0, i)))  # 左縁
+        edge_pixels.append(image.getpixel((width-1, i)))  # 右縁
+    
+    all_pixels = corner_pixels + edge_pixels
+    avg_value = np.mean(all_pixels)
+    
+    return 'white' if avg_value > 127 else 'black'
 
 def preprocess_image(image_path):
     """
@@ -39,19 +53,24 @@ def preprocess_image(image_path):
         image = image.convert('L')
         
         bg_color = detect_background_color(image)
+        
         if bg_color == 'white':
             image = ImageOps.invert(image)
         
         width, height = image.size
         max_dim = max(width, height)
         
+        # 正方形の画像を作成（黒背景）
         square_image = Image.new('L', (max_dim, max_dim), color=0)
         paste_x = (max_dim - width) // 2
         paste_y = (max_dim - height) // 2
         square_image.paste(image, (paste_x, paste_y))
         
+        # 28x28にリサイズ
         resized_image = square_image.resize((28, 28), Image.Resampling.LANCZOS)
         image_array = np.array(resized_image)
+        
+        # 正規化
         image_array = image_array.astype(np.float32) / 255.0
         
         return image_array.flatten()
