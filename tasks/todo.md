@@ -114,62 +114,10 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - セキュアな画像アップロード機能の実装
 - プロダクションレディなセキュリティ対応の完了
 
-## サーバー接続エラー問題対応（2025-08-05）
-
-### 問題の分析
-- [x] **問題**: 画像アップロード時に「サーバーに接続できません」エラーが発生
-- [x] **根本原因の特定**:
-  1. MLモデルファイル（svm_model.pkl）が存在しない
-  2. ポート5000がmacOSのControlCenterと競合
-  3. Express 5.xの路由パターンエラー（`app.use('*')`問題）
-
-### 解決済み作業
-- [x] 現在のサーバー起動状況の確認
-- [x] MLモデルファイル（svm_model.pkl）の存在確認  
-- [x] Python仮想環境の状態確認
-- [x] train_simple_model.pyを実行してMLモデルを訓練・生成
-- [x] ポート5000のControlCenter競合問題の解決（ポート5001に変更）
-- [x] server/index.jsのExpress路由パターン修正
-- [x] client/package.jsonのproxy設定更新
-- [x] サーバー単独での起動テスト
-- [x] /api/healthエンドポイントの動作確認
-- [x] /api/predictエンドポイントの単体テスト
-- [x] npm run devでのフルシステム起動テスト
-- [x] フロントエンドからのAPI接続テスト
-- [x] 画像アップロード機能の動作確認
-
-### 成果
-- **問題完全解決**: 「サーバーに接続できません」エラーが解消
-- **システム正常稼働**: サーバー（ポート5001）、フロントエンド（ポート3000）
-- **機能完全動作**: 画像アップロード、予測機能、API通信
-
-## Review - サーバー接続エラー問題対応完了
-
-### 実施した作業
-1. **根本原因の特定と解決**
-   - MLモデルファイル不在問題：train_simple_model.pyでsvm_model.pkl生成
-   - ポート競合問題：ControlCenter占有ポート5000を回避し、5001番に変更
-   - Express 5.x路由エラー：`app.use('*')`を`app.use()`に修正
-
-2. **システム設定変更**
-   - .envファイル：PORT=5001に変更
-   - client/package.json：proxy設定をlocalhost:5001に更新
-   - 全APIエンドポイントの動作確認完了
-
-3. **品質保証**
-   - フルシステム統合テスト実行
-   - 画像アップロード機能の完全動作確認
-   - API通信の安定性確認
-
-### 技術的成果
-- Express 5.x系での安定動作実現
-- Python ML環境との完全統合
-- React開発サーバーとの正常なproxy通信確立
-
 ## 技術スタック
 
-- **フロントエンド**: React 19.1.1, CSS3（レスポンシブデザイン）
-- **バックエンド**: Node.js, Express.js 5.1.0, Multer（ファイルアップロード）
-- **機械学習**: Python 3.13.0, scikit-learn, PIL, NumPy
+- **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
+- **バックエンド**: Node.js, Express.js, Multer（ファイルアップロード）
+- **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
-- **開発ツール**: ESLint, Prettier, nodemon
+- **開発ツール**: ESLint, Prettier, nodemo

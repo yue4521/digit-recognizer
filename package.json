@@ -7,7 +7,7 @@
     "install-python": "pip install -r ml/requirements.txt",
     "train-model": "cd ml && python3 train_simple_model.py",
     "dev": "concurrently --kill-others --kill-others-on-fail \"npm run dev --prefix server\" \"npm run start --prefix client\"",
-    "dev:stop": "lsof -ti:3000,5000,5001 | xargs kill -9 2>/dev/null || echo 'No processes found'",
+    "dev:stop": "lsof -ti:3000,5000 | xargs kill -9 2>/dev/null || echo 'No processes found'",
     "dev-server": "npm run dev --prefix server",
     "dev-client": "npm run start --prefix client",
     "build": "npm run build --prefix client",
