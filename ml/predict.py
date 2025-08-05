@@ -10,7 +10,6 @@ import numpy as np
 from PIL import Image, ImageOps
 import joblib
 import os
-from io import BytesIO
 import time
 
 

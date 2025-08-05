@@ -8,7 +8,7 @@ import numpy as np
 from sklearn import svm
 import joblib
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 
 def generate_digit_data():

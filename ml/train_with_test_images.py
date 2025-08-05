@@ -9,7 +9,6 @@ from sklearn import svm
 import joblib
 import os
 from PIL import Image, ImageOps
-import glob
 
 
 def preprocess_image_for_training(image_path):
@@ -135,7 +134,7 @@ def generate_synthetic_data():
 
                 draw.text((text_x, text_y), str(digit), fill=255, font=font)
 
-            except:
+            except Exception:
                 # フォールバック
                 draw.text((10 + x_offset, 8 + y_offset), str(digit), fill=255)
 
