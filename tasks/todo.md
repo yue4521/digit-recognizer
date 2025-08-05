@@ -114,119 +114,62 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - セキュアな画像アップロード機能の実装
 - プロダクションレディなセキュリティ対応の完了
 
-## GitHub Actionsワークフロー修正作業（2025-08-03）
+## サーバー接続エラー問題対応（2025-08-05）
 
-### 対応内容
-- [x] ディレクトリ名修正：.github/workflow/ → .github/workflows/
-- [x] TypeScript/TypeDoc関連設定の削除（プロジェクトはJavaScript）
-- [x] Sphinx設定の削除（Pythonドキュメント生成ツール）
-- [x] モノレポ構造対応（client/, server/, ml/）
-- [x] 既存Markdownファイルベースのドキュメント生成に変更
+### 問題の分析
+- [x] **問題**: 画像アップロード時に「サーバーに接続できません」エラーが発生
+- [x] **根本原因の特定**:
+  1. MLモデルファイル（svm_model.pkl）が存在しない
+  2. ポート5000がmacOSのControlCenterと競合
+  3. Express 5.xの路由パターンエラー（`app.use('*')`問題）
 
-### 修正されたワークフロー仕様
-- **ドキュメント生成**: 既存のMarkdownファイル（docs/*.md）をHTMLサイトに変換
-- **デプロイ**: GitHub Pagesへの自動デプロイ（mainブランチpush時）
-- **動作環境**: Ubuntu Latest, Node.js 18
-- **シンプル化**: 不要な依存関係とビルドステップを除去
+### 解決済み作業
+- [x] 現在のサーバー起動状況の確認
+- [x] MLモデルファイル（svm_model.pkl）の存在確認  
+- [x] Python仮想環境の状態確認
+- [x] train_simple_model.pyを実行してMLモデルを訓練・生成
+- [x] ポート5000のControlCenter競合問題の解決（ポート5001に変更）
+- [x] server/index.jsのExpress路由パターン修正
+- [x] client/package.jsonのproxy設定更新
+- [x] サーバー単独での起動テスト
+- [x] /api/healthエンドポイントの動作確認
+- [x] /api/predictエンドポイントの単体テスト
+- [x] npm run devでのフルシステム起動テスト
+- [x] フロントエンドからのAPI接続テスト
+- [x] 画像アップロード機能の動作確認
 
-### 実装したサイト構造
-1. **インデックスページ**: ドキュメント一覧とナビゲーション
-2. **個別ページ**: 各Markdownファイルをプリフォーマット済みHTMLに変換
-3. **レスポンシブデザイン**: モバイル対応とシンプルなスタイリング
+### 成果
+- **問題完全解決**: 「サーバーに接続できません」エラーが解消
+- **システム正常稼働**: サーバー（ポート5001）、フロントエンド（ポート3000）
+- **機能完全動作**: 画像アップロード、予測機能、API通信
 
-## Review - GitHub Actionsワークフロー修正完了
+## Review - サーバー接続エラー問題対応完了
 
 ### 実施した作業
-1. **環境とアプリとの整合性確認**
-   - プロジェクト構造の詳細分析（JavaScript、モノレポ、Markdown）
-   - 既存ワークフローファイルの問題点特定
+1. **根本原因の特定と解決**
+   - MLモデルファイル不在問題：train_simple_model.pyでsvm_model.pkl生成
+   - ポート競合問題：ControlCenter占有ポート5000を回避し、5001番に変更
+   - Express 5.x路由エラー：`app.use('*')`を`app.use()`に修正
 
-2. **ワークフロー全面修正**
-   - 正しいディレクトリ構造への移動（.github/workflows/）
-   - TypeScript関連設定の完全削除
-   - Sphinx（Python）設定の削除
-   - プロジェクト実情に合わせたシンプルなMarkdown→HTML変換
+2. **システム設定変更**
+   - .envファイル：PORT=5001に変更
+   - client/package.json：proxy設定をlocalhost:5001に更新
+   - 全APIエンドポイントの動作確認完了
 
 3. **品質保証**
-   - YAML構文チェック完了
-   - 既存Markdownファイル存在確認
-   - Git変更管理とセマンティックコミット
-
-### 成果
-- プロジェクト構造に適したGitHub Actionsワークフローの実装
-- 既存ドキュメント（10個のMarkdownファイル）のWeb公開対応
-- GitHub Pagesでのドキュメントサイト自動デプロイ機能
-
-## VSCode GitHub Actions YAML誤検出対応（2025-08-03）
-
-### 問題の概要
-- VSCodeでdocs.yaml内の`environment: github-pages`が「is not valid」エラーとして誤検出される
-- GitHub Actionsでは正常に動作するが、開発者エクスペリエンスに影響
-
-### 根本原因
-- VSCodeのYAMLスキーマ検証での既知の問題
-- github-pages環境は公式にサポートされているが、一部のスキーマ定義で不完全
-
-### 実装した解決策
-
-#### 1. VSCodeワークスペース設定（.vscode/settings.json）
-```json
-{
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.{yml,yaml}"
-    },
-    "yaml.validate": true,
-    "yaml.completion": true,
-    "files.associations": {
-        "*.yml": "yaml",
-        "*.yaml": "yaml"
-    }
-}
-```
-
-#### 2. Schema Override指定（docs.yaml）
-- ファイル先頭にschema指定コメント追加
-- VSCodeに正しいYAMLスキーマを明示的に指示
-
-#### 3. 詳細な説明コメント追加
-- 誤検出であることの明確な説明
-- github-pages環境の正当性を技術的に明記
-
-### 技術的詳細
-- **github-pages環境**: GitHub公式サポートの標準環境名
-- **SchemaStore**: 公式JSONスキーマによる正確な検証
-- **チーム共有**: .vscode/settings.jsonによる統一設定
-
-### 成果
-- VSCodeでの誤検出警告の解決
-- 開発チーム全体での一貫したYAML検証環境
-- GitHub Actionsワークフローの信頼性確保
-
-## Review - VSCode YAML誤検出対応完了
-
-### 実施した作業
-1. **VSCodeワークスペース設定の構築**
-   - 正確なYAMLスキーママッピングの設定
-   - GitHub Actions用の適切な検証ルール適用
-
-2. **Schema Override実装**
-   - docs.yamlファイルへの明示的スキーマ指定
-   - 誤検出回避のためのコメント強化
-
-3. **技術文書化**
-   - 問題の根本原因と解決策の詳細記録
-   - 将来のメンテナンス性確保
+   - フルシステム統合テスト実行
+   - 画像アップロード機能の完全動作確認
+   - API通信の安定性確認
 
 ### 技術的成果
-- VSCodeでのGitHub Actions YAML検証の正常化
-- 開発者エクスペリエンスの改善
-- プロジェクト全体での統一的な設定管理
+- Express 5.x系での安定動作実現
+- Python ML環境との完全統合
+- React開発サーバーとの正常なproxy通信確立
 
 ## 技術スタック
 
-- **フロントエンド**: React 18, CSS3（レスポンシブデザイン）
-- **バックエンド**: Node.js, Express.js, Multer（ファイルアップロード）
-- **機械学習**: Python 3.8+, scikit-learn, PIL, NumPy
+- **フロントエンド**: React 19.1.1, CSS3（レスポンシブデザイン）
+- **バックエンド**: Node.js, Express.js 5.1.0, Multer（ファイルアップロード）
+- **機械学習**: Python 3.13.0, scikit-learn, PIL, NumPy
 - **データセット**: MNIST手書き数字データセット
-- **開発ツール**: ESLint, Prettier, nodemon, VSCode（YAML検証）
-- **CI/CD**: GitHub Actions, GitHub Pages（ドキュメント公開）
+- **開発ツール**: ESLint, Prettier, nodemon

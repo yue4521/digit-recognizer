@@ -28,13 +28,29 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: '見つかりません',
     message: '要求されたリソースが見つかりませんでした'
   });
 });
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`サーバーがポート ${PORT} で実行中`);
   console.log(`ヘルスチェック: http://localhost:${PORT}/api/health`);
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM受信: サーバーを正常終了中...');
+  server.close(() => {
+    console.log('サーバーが正常終了しました');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT受信: サーバーを正常終了中...');
+  server.close(() => {
+    console.log('サーバーが正常終了しました');
+    process.exit(0);
+  });
 });
