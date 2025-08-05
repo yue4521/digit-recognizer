@@ -28,7 +28,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: '見つかりません',
     message: '要求されたリソースが見つかりませんでした'
