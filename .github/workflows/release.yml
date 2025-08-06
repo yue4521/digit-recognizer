@@ -24,9 +24,13 @@ jobs:
       - name: Update README version badge
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          sed -i "s/version-v[0-9]\+\.[0-9]\+\.[0-9]\+/version-$VERSION/g" \
-            README.md
-          echo "Updated README badge to version $VERSION"
+          if [ -f "README.md" ]; then
+            sed -i "s/version-v[0-9]\+\.[0-9]\+\.[0-9]\+/version-$VERSION/g" \
+              README.md
+            echo "Updated README badge to version $VERSION"
+          else
+            echo "Warning: README.md not found, skipping version badge update"
+          fi
 
       - name: Configure git
         run: |
@@ -36,13 +40,17 @@ jobs:
       - name: Commit and push README changes
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          git add README.md
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
+          if [ -f "README.md" ]; then
+            git add README.md
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
+              git push origin HEAD:test/workflow || git push
+              echo "README changes committed and pushed"
+            fi
           else
-            git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
-            git push origin HEAD:test/workflow || git push
-            echo "README changes committed and pushed"
+            echo "README.md not found, skipping commit"
           fi
 
       # Node side
