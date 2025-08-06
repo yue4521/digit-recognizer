@@ -1,3 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "digit-recognizer-ml"
+version = "1.0.0"
+description = "機械学習による手書き数字認識モジュール"
+authors = [{name = "Digit Recognizer Team"}]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "scikit-learn>=1.0.0",
+    "numpy>=1.20.0",
+    "pillow>=8.0.0",
+    "joblib>=1.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/yuki/digit-recognizer"
+Repository = "https://github.com/yuki/digit-recognizer"
+
+[tool.setuptools]
+py-modules = ["predict"]
+
 [tool.black]
 # BlackはPythonコードの自動フォーマッターです
 line-length = 88

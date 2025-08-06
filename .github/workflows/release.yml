@@ -1,0 +1,106 @@
+---
+name: Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version extraction and README update
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Update README version badge
+        run: |
+          VERSION=${{ steps.extract_version.outputs.version }}
+          if [ -f "README.md" ]; then
+            sed -i "s/version-v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version-$VERSION/g" \
+              README.md
+            echo "Updated README.md badge to version $VERSION"
+          else
+            echo "Warning: README.md not found, skipping version badge update"
+          fi
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit and push README changes
+        run: |
+          VERSION=${{ steps.extract_version.outputs.version }}
+          if [ -f "README.md" ]; then
+            git add README.md
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
+              git push origin HEAD:test/workflow || git push origin HEAD:main || echo "Push failed but continuing workflow"
+              echo "README.md changes committed and pushed"
+            fi
+          else
+            echo "README.md not found, skipping commit"
+          fi
+
+      # Node side
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - run: npm ci
+      - name: Install client dependencies
+        run: npm ci --prefix client
+      - run: npm run build
+      - name: Create client build archive
+        run: |
+          if [ -d "client/build" ]; then
+            cd client && zip -r ../client_build.zip build
+            echo "Client build archived successfully"
+          else
+            echo "Error: client/build directory not found"
+            exit 1
+          fi
+
+      # Python side (if pyproject.toml exists)
+      - name: Check for pyproject.toml
+        id: check_pyproject
+        run: |
+          if [ -f "ml/pyproject.toml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "pyproject.toml found in ml/ directory"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Warning: ml/pyproject.toml not found."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.check_pyproject.outputs.exists == 'true'
+        with:
+          python-version: '3.11'
+      - name: Build Python wheel
+        if: steps.check_pyproject.outputs.exists == 'true'
+        run: |
+          pip install build
+          cd ml
+          python -m build -w -o ../dist
+          echo "Python wheel built successfully"
+          ls -la ../dist/
+      # Artifacts summary
+      - name: List build artifacts
+        run: |
+          echo "Build completed successfully!"
+          echo "Client build:"
+          ls -la client_build.zip || echo "Client build not found"
+          echo "Python wheel:"
+          ls -la dist/ || echo "Python wheel not found"
