@@ -24,16 +24,12 @@ jobs:
       - name: Update README version badge
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          if [ -f "readme.md" ]; then
-            sed -i "s/version-v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version-$VERSION/g" \
-              readme.md
-            echo "Updated readme.md badge to version $VERSION"
-          elif [ -f "README.md" ]; then
+          if [ -f "README.md" ]; then
             sed -i "s/version-v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version-$VERSION/g" \
               README.md
             echo "Updated README.md badge to version $VERSION"
           else
-            echo "Warning: Neither readme.md nor README.md found, skipping version badge update"
+            echo "Warning: README.md not found, skipping version badge update"
           fi
 
       - name: Configure git
@@ -44,16 +40,7 @@ jobs:
       - name: Commit and push README changes
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          if [ -f "readme.md" ]; then
-            git add readme.md
-            if git diff --staged --quiet; then
-              echo "No changes to commit"
-            else
-              git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
-              git push origin HEAD:test/workflow || git push origin HEAD:main || echo "Push failed but continuing workflow"
-              echo "readme.md changes committed and pushed"
-            fi
-          elif [ -f "README.md" ]; then
+          if [ -f "README.md" ]; then
             git add README.md
             if git diff --staged --quiet; then
               echo "No changes to commit"
@@ -63,7 +50,7 @@ jobs:
               echo "README.md changes committed and pushed"
             fi
           else
-            echo "Neither readme.md nor README.md found, skipping commit"
+            echo "README.md not found, skipping commit"
           fi
 
       # Node side
