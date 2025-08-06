@@ -129,6 +129,14 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+    # Ignore indirect dependencies that can't be safely updated
+    ignore:
+      - dependency-name: "nth-check"
+        versions: ["< 2.0.1"]
+      - dependency-name: "postcss"
+        versions: ["< 8.4.31"]
+      - dependency-name: "webpack-dev-server"
+        versions: ["<= 5.2.0"]
     groups:
       production-dependencies:
         dependency-type: "production"
