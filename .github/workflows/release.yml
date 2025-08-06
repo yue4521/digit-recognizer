@@ -2,7 +2,8 @@
 name: Release
 on:
   push:
-    tags: ['v*.*.*']
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build-and-upload:
@@ -11,6 +12,38 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      # Version extraction and README update
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Update README version badge
+        run: |
+          VERSION=${{ steps.extract_version.outputs.version }}
+          sed -i "s/version-v[0-9]\+\.[0-9]\+\.[0-9]\+/version-$VERSION/g" \
+            README.md
+          echo "Updated README badge to version $VERSION"
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit and push README changes
+        run: |
+          VERSION=${{ steps.extract_version.outputs.version }}
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
+            git push origin HEAD:test/workflow || git push
+            echo "README changes committed and pushed"
+          fi
 
       # Node side
       - uses: actions/setup-node@v4
@@ -47,7 +80,6 @@ jobs:
         if: steps.check_pyproject.outputs.exists == 'true'
         with:
           python-version: '3.11'
-      
       - name: Build Python wheel
         if: steps.check_pyproject.outputs.exists == 'true'
         run: |
