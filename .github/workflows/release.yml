@@ -21,14 +21,6 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Debug filesystem
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Files in root:"
-          ls -la
-          echo "Looking for README files:"
-          find . -name "README*" -type f || echo "No README files found"
-          
       - name: Update README version badge
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
