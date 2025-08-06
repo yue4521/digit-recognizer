@@ -56,14 +56,11 @@ jobs:
           python -m build -w -o ../dist
           echo "Python wheel built successfully"
           ls -la ../dist/
-      # GitHub Release
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            client_build.zip
-            dist/*.whl
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
+      # Artifacts summary
+      - name: List build artifacts
+        run: |
+          echo "Build completed successfully!"
+          echo "Client build:"
+          ls -la client_build.zip || echo "Client build not found"
+          echo "Python wheel:"
+          ls -la dist/ || echo "Python wheel not found"

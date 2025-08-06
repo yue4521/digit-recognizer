@@ -21,6 +21,12 @@ dependencies = [
 Homepage = "https://github.com/yuki/digit-recognizer"
 Repository = "https://github.com/yuki/digit-recognizer"
 
+[tool.setuptools.packages.find]
+include = ["predict*"]
+
+[tool.setuptools.py-modules]
+py_modules = ["predict"]
+
 [tool.black]
 # BlackはPythonコードの自動フォーマッターです
 line-length = 88
