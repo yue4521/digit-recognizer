@@ -18,6 +18,8 @@ jobs:
           node-version: 18
           cache: 'npm'
       - run: npm ci
+      - name: Install client dependencies
+        run: npm ci --prefix client
       - run: npm run build
       - name: Create client build archive
         run: |
