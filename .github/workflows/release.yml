@@ -13,15 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Debug: List files to verify checkout
-      - name: Debug - List files
-        run: |
-          echo "=== Current directory: $(pwd) ==="
-          echo "=== Files in root: ==="
-          ls -la
-          echo "=== Find README.md: ==="
-          find . -name "README.md" -type f || echo "README.md not found"
-
       # Version extraction and README update
       - name: Extract version from tag
         id: extract_version
@@ -33,12 +24,16 @@ jobs:
       - name: Update README version badge
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          if [ -f "README.md" ]; then
+          if [ -f "readme.md" ]; then
+            sed -i "s/version-v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version-$VERSION/g" \
+              readme.md
+            echo "Updated readme.md badge to version $VERSION"
+          elif [ -f "README.md" ]; then
             sed -i "s/version-v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version-$VERSION/g" \
               README.md
-            echo "Updated README badge to version $VERSION"
+            echo "Updated README.md badge to version $VERSION"
           else
-            echo "Warning: README.md not found, skipping version badge update"
+            echo "Warning: Neither readme.md nor README.md found, skipping version badge update"
           fi
 
       - name: Configure git
@@ -49,17 +44,26 @@ jobs:
       - name: Commit and push README changes
         run: |
           VERSION=${{ steps.extract_version.outputs.version }}
-          if [ -f "README.md" ]; then
+          if [ -f "readme.md" ]; then
+            git add readme.md
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
+              git push origin HEAD:test/workflow || git push
+              echo "readme.md changes committed and pushed"
+            fi
+          elif [ -f "README.md" ]; then
             git add README.md
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
               git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
               git push origin HEAD:test/workflow || git push
-              echo "README changes committed and pushed"
+              echo "README.md changes committed and pushed"
             fi
           else
-            echo "README.md not found, skipping commit"
+            echo "Neither readme.md nor README.md found, skipping commit"
           fi
 
       # Node side
