@@ -1,43 +1,64 @@
 name: CI
 on:
   push:
-    branches: [main, test/workflow]
   pull_request:
 
 jobs:
+  # Node.js プロジェクトのCI
   node:
+    name: Node.js CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+      - name: Node.js環境のセットアップ
+        uses: actions/setup-node@v4
         with: { node-version: 18, cache: 'npm' }
-      - run: npm ci
-      - run: npm ci --prefix client
-      - run: npm ci --prefix server
-      # - run: npm run lint  # 一時的に無効化（ESLint v9設定の問題）
-      # - run: npm test -- --ci  # 一時的に無効化（testスクリプトが定義されていない）
-      - run: npm run build --if-present
-      - uses: actions/upload-artifact@v4
+      - name: ルート依存関係のインストール
+        run: npm ci
+      - name: クライアント依存関係のインストール
+        run: npm ci --prefix client
+      - name: サーバー依存関係のインストール
+        run: npm ci --prefix server
+      # - name: ESLint実行  # 一時的に無効化（ESLint v9設定の問題）
+      #   run: npm run lint
+      # - name: テスト実行  # 一時的に無効化（testスクリプトが定義されていない）
+      #   run: npm test -- --ci
+      - name: プロジェクトのビルド
+        run: npm run build --if-present
+      - name: クライアントビルドのアップロード
+        uses: actions/upload-artifact@v4
         with: { name: client-build, path: client/build }
 
+  # Python プロジェクトのCI
   python:
+    name: Python CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
 
-      # Python + venv + キャッシュ
-      - uses: actions/setup-python@v5
+      # Python環境のセットアップとキャッシュ
+      - name: Python環境のセットアップ
+        uses: actions/setup-python@v5
         with: { python-version: '3.11' }
 
-      - uses: getsentry/action-setup-venv@v2.2.0
+      - name: 仮想環境のセットアップとキャッシュ
+        uses: getsentry/action-setup-venv@v2.2.0
         with:
+          python-version: '3.11'
           venv-dir: .venv
           cache-dependency-path: ml/requirements.txt
 
-      - run: pip install -r ml/requirements.txt
-      - run: python -m black --check ml/
-      - run: python -m flake8 ml/ --extend-ignore=E203,E501,W503
-      - run: cd ml && pytest -q --cov=. --cov-report=xml || echo "No tests found"
-      - uses: actions/upload-artifact@v4
+      - name: Python依存関係のインストール
+        run: pip install -r ml/requirements.txt
+      - name: コードフォーマット検査 (Black)
+        run: python -m black --check ml/
+      - name: コード品質検査 (Flake8)
+        run: python -m flake8 ml/ --extend-ignore=E203,E501,W503
+      - name: テストとカバレッジ実行
+        run: cd ml && pytest -q --cov=. --cov-report=xml || echo "No tests found"
+      - name: カバレッジレポートのアップロード
+        uses: actions/upload-artifact@v4
         with: { name: coverage-xml, path: ml/coverage.xml }
         if: success() || failure()
