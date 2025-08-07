@@ -1,53 +1,59 @@
 version: 2
+
+# 共通設定定義 - YAMLアンカーによる重複削減
+x-common-schedule: &common-schedule
+  interval: "weekly"
+  day: "monday"
+  time: "09:00"
+  timezone: "Asia/Tokyo"
+
+x-common-reviewers: &common-reviewers
+  - "yue4521"
+
+x-common-assignees: &common-assignees
+  - "yue4521"
+
+x-common-dependency-types: &common-dependency-types
+  - dependency-type: "direct"
+  - dependency-type: "indirect"
+
+x-common-groups: &common-groups
+  production-dependencies:
+    dependency-type: "production"
+    update-types:
+      - "major"
+      - "minor"
+      - "patch"
+  development-dependencies:
+    dependency-type: "development"
+    update-types:
+      - "minor"
+      - "patch"
+
 updates:
-  # Root directory Python packages
+  # ルートディレクトリ Python パッケージ管理
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+    schedule: *common-schedule
     open-pull-requests-limit: 5
-    reviewers:
-      - "yue4521"
-    assignees:
-      - "yue4521"
+    reviewers: *common-reviewers
+    assignees: *common-assignees
     commit-message:
       prefix: "deps"
       include: "scope"
     labels:
       - "dependencies"
       - "python"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+    allow: *common-dependency-types
+    groups: *common-groups
 
-  # ML directory Python packages (pyproject.toml)
+  # MLディレクトリ Python パッケージ管理 (pyproject.toml)
   - package-ecosystem: "pip"
     directory: "/ml"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+    schedule: *common-schedule
     open-pull-requests-limit: 3
-    reviewers:
-      - "yue4521"
-    assignees:
-      - "yue4521"
+    reviewers: *common-reviewers
+    assignees: *common-assignees
     commit-message:
       prefix: "deps(ml)"
       include: "scope"
@@ -55,70 +61,32 @@ updates:
       - "dependencies"
       - "ml"
       - "python"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+    allow: *common-dependency-types
+    groups: *common-groups
 
-  # Root directory npm packages
+  # ルートディレクトリ npm パッケージ管理
   - package-ecosystem: "npm"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+    schedule: *common-schedule
     open-pull-requests-limit: 5
-    reviewers:
-      - "yue4521"
-    assignees:
-      - "yue4521"
+    reviewers: *common-reviewers
+    assignees: *common-assignees
     commit-message:
       prefix: "deps"
       include: "scope"
     labels:
       - "dependencies"
       - "javascript"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+    allow: *common-dependency-types
+    groups: *common-groups
 
-  # Client directory npm packages
+  # クライアントディレクトリ npm パッケージ管理
   - package-ecosystem: "npm"
     directory: "/client"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+    schedule: *common-schedule
     open-pull-requests-limit: 3
-    reviewers:
-      - "yue4521"
-    assignees:
-      - "yue4521"
+    reviewers: *common-reviewers
+    assignees: *common-assignees
     commit-message:
       prefix: "deps(client)"
       include: "scope"
@@ -126,10 +94,8 @@ updates:
       - "dependencies"
       - "frontend"
       - "javascript"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    # Ignore indirect dependencies that can't be safely updated
+    allow: *common-dependency-types
+    # 安全にアップデートできない間接依存関係を無視
     ignore:
       - dependency-name: "nth-check"
         versions: ["< 2.0.1"]
@@ -137,32 +103,15 @@ updates:
         versions: ["< 8.4.31"]
       - dependency-name: "webpack-dev-server"
         versions: ["<= 5.2.0"]
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+    groups: *common-groups
 
-  # Server directory npm packages
+  # サーバーディレクトリ npm パッケージ管理
   - package-ecosystem: "npm"
     directory: "/server"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
+    schedule: *common-schedule
     open-pull-requests-limit: 3
-    reviewers:
-      - "yue4521"
-    assignees:
-      - "yue4521"
+    reviewers: *common-reviewers
+    assignees: *common-assignees
     commit-message:
       prefix: "deps(server)"
       include: "scope"
@@ -170,18 +119,5 @@ updates:
       - "dependencies"
       - "backend"
       - "javascript"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+    allow: *common-dependency-types
+    groups: *common-groups
