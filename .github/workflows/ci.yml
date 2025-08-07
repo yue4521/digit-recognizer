@@ -46,6 +46,7 @@ jobs:
       - name: 仮想環境のセットアップとキャッシュ
         uses: getsentry/action-setup-venv@v2.2.0
         with:
+          python-version: '3.11'
           venv-dir: .venv
           cache-dependency-path: ml/requirements.txt
 
