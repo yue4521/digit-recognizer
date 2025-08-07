@@ -60,7 +60,7 @@ jobs:
           fi
         continue-on-error: true
 
-      - name:監査結果のアップロード (${{ matrix.directory }})
+      - name: 監査結果のアップロード (${{ matrix.directory }})
         uses: actions/upload-artifact@v4
         with:
           name: npm-audit-${{ matrix.directory }}
