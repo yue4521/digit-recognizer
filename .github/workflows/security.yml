@@ -4,6 +4,8 @@ on:
   schedule:
     # 毎週月曜日 午前2時（UTC）に実行
     - cron: '0 2 * * 1'
+  workflow_dispatch:
+    # 手動実行を許可
   push:
     branches: [main, test/workflow]
     paths:
