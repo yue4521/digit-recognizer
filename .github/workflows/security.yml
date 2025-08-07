@@ -2,8 +2,8 @@
 name: Security Audit
 on:
   schedule:
-    # 毎週月曜日 午前2時（UTC）に実行
-    - cron: '0 2 * * 1'
+    # 毎週月曜日 午前2時（JST）に実行
+    - cron: '0 17 * * 0'
   workflow_dispatch:
     # 手動実行を許可
   push:
@@ -135,7 +135,7 @@ jobs:
         run: |
           echo "# セキュリティ監査サマリー" > security-summary.md
           echo "" >> security-summary.md
-          echo "実行日時: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> security-summary.md
+          echo "実行日時: $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M:%S JST')" >> security-summary.md
           echo "" >> security-summary.md
           
           echo "## Node.js 監査結果" >> security-summary.md
