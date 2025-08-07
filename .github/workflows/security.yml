@@ -1,0 +1,224 @@
+---
+name: Security Audit
+on:
+  schedule:
+    # 毎週月曜日 午前2時（UTC）に実行
+    - cron: '0 2 * * 1'
+  push:
+    branches: [main, test/workflow]
+    paths:
+      - 'package*.json'
+      - 'client/package*.json'
+      - 'server/package*.json'
+      - 'ml/requirements.txt'
+      - 'ml/pyproject.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package*.json'
+      - 'client/package*.json'
+      - 'server/package*.json'
+      - 'ml/requirements.txt'
+      - 'ml/pyproject.toml'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # Node.js セキュリティ監査
+  node-security:
+    name: Node.js Security Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: ['.', 'client', 'server']
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js環境のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: 依存関係のインストール (${{ matrix.directory }})
+        run: |
+          if [ "${{ matrix.directory }}" = "." ]; then
+            npm ci
+          else
+            npm ci --prefix ${{ matrix.directory }}
+          fi
+
+      - name: npm audit実行 (${{ matrix.directory }})
+        run: |
+          if [ "${{ matrix.directory }}" = "." ]; then
+            npm audit --audit-level=moderate --json > npm-audit-${{ matrix.directory }}.json || true
+          else
+            npm audit --audit-level=moderate --json --prefix ${{ matrix.directory }} > npm-audit-${{ matrix.directory }}.json || true
+          fi
+        continue-on-error: true
+
+      - name:監査結果のアップロード (${{ matrix.directory }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ matrix.directory }}
+          path: npm-audit-${{ matrix.directory }}.json
+          retention-days: 30
+
+  # Python セキュリティ監査
+  python-security:
+    name: Python Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python環境のセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: セキュリティツールのインストール
+        run: |
+          pip install --upgrade pip
+          pip install safety bandit pip-audit
+
+      - name: ml/依存関係のインストール
+        run: |
+          pip install -r ml/requirements.txt
+
+      - name: Safety チェック実行
+        run: |
+          safety check --json --output safety-report.json || true
+        continue-on-error: true
+
+      - name: pip-audit チェック実行
+        run: |
+          pip-audit --format=json --output=pip-audit-report.json || true
+        continue-on-error: true
+
+      - name: Bandit セキュリティ静的解析実行
+        run: |
+          bandit -r ml/ -f json -o bandit-report.json || true
+        continue-on-error: true
+
+      - name: Python監査結果のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-security-reports
+          path: |
+            safety-report.json
+            pip-audit-report.json
+            bandit-report.json
+          retention-days: 30
+
+  # セキュリティ結果サマリー
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [node-security, python-security]
+    if: always()
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: 全監査結果のダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          path: security-reports
+
+      - name: セキュリティサマリー作成
+        run: |
+          echo "# セキュリティ監査サマリー" > security-summary.md
+          echo "" >> security-summary.md
+          echo "実行日時: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "## Node.js 監査結果" >> security-summary.md
+          for file in security-reports/npm-audit-*/npm-audit-*.json; do
+            if [ -f "$file" ]; then
+              dir=$(echo "$file" | sed 's/.*npm-audit-\(.*\)\.json/\1/')
+              vulnerabilities=$(jq '.metadata.vulnerabilities | to_entries | length' "$file" 2>/dev/null || echo "0")
+              echo "- $dir: $vulnerabilities 件の脆弱性" >> security-summary.md
+            fi
+          done
+          
+          echo "" >> security-summary.md
+          echo "## Python 監査結果" >> security-summary.md
+          
+          if [ -f "security-reports/python-security-reports/safety-report.json" ]; then
+            safety_issues=$(jq '. | length' security-reports/python-security-reports/safety-report.json 2>/dev/null || echo "0")
+            echo "- Safety: $safety_issues 件の既知脆弱性" >> security-summary.md
+          fi
+          
+          if [ -f "security-reports/python-security-reports/bandit-report.json" ]; then
+            bandit_issues=$(jq '.results | length' security-reports/python-security-reports/bandit-report.json 2>/dev/null || echo "0")
+            echo "- Bandit: $bandit_issues 件の潜在的セキュリティ問題" >> security-summary.md
+          fi
+          
+          cat security-summary.md
+
+      - name: セキュリティサマリーのアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary
+          path: security-summary.md
+          retention-days: 90
+
+  # 重大な脆弱性チェック
+  critical-vulnerabilities:
+    name: Critical Vulnerabilities Check
+    runs-on: ubuntu-latest
+    needs: [node-security, python-security]
+    if: always()
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: 全監査結果のダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          path: security-reports
+
+      - name: 重大な脆弱性チェック
+        run: |
+          critical_found=false
+          
+          # Node.js 重大脆弱性チェック
+          for file in security-reports/npm-audit-*/npm-audit-*.json; do
+            if [ -f "$file" ]; then
+              critical=$(jq '.metadata.vulnerabilities.critical // 0' "$file" 2>/dev/null)
+              high=$(jq '.metadata.vulnerabilities.high // 0' "$file" 2>/dev/null)
+              if [ "$critical" -gt 0 ] || [ "$high" -gt 0 ]; then
+                echo "::warning::重大度の高い脆弱性が発見されました: $file"
+                critical_found=true
+              fi
+            fi
+          done
+          
+          # Python 重大脆弱性チェック（Safety）
+          if [ -f "security-reports/python-security-reports/safety-report.json" ]; then
+            safety_issues=$(jq '. | length' security-reports/python-security-reports/safety-report.json 2>/dev/null || echo "0")
+            if [ "$safety_issues" -gt 0 ]; then
+              echo "::warning::Python依存関係に既知の脆弱性が発見されました"
+              critical_found=true
+            fi
+          fi
+          
+          # Bandit高リスク問題チェック
+          if [ -f "security-reports/python-security-reports/bandit-report.json" ]; then
+            high_confidence=$(jq '[.results[] | select(.issue_confidence == "HIGH")] | length' security-reports/python-security-reports/bandit-report.json 2>/dev/null || echo "0")
+            if [ "$high_confidence" -gt 0 ]; then
+              echo "::warning::高信頼度のセキュリティ問題が発見されました"
+              critical_found=true
+            fi
+          fi
+          
+          if [ "$critical_found" = true ]; then
+            echo "重大なセキュリティ問題が検出されました。詳細は監査レポートを確認してください。"
+            exit 1
+          else
+            echo "重大なセキュリティ問題は検出されませんでした。"
+          fi
