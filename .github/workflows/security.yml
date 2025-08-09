@@ -128,16 +128,16 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSSでシークレットスキャン実行
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: main
-          head: HEAD
-          extra_args: --debug --only-verified
-
-      - name: TruffleHog結果のJSON出力
         run: |
-          docker run --rm -v "$PWD:/pwd" trufflesecurity/trufflehog:latest filesystem /pwd --json > trufflehog-report.json || true
+          # workflow_dispatchやscheduleイベントの場合は、git scanではなくfilesystem scanを使用
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Running filesystem scan for ${{ github.event_name }} event"
+            docker run --rm -v "$PWD:/pwd" trufflesecurity/trufflehog:latest filesystem /pwd --json --output=/pwd/trufflehog-report.json || true
+          else
+            echo "Running git scan for ${{ github.event_name }} event"
+            # push/pull_requestイベントの場合は、TruffleHog actionを使用
+            docker run --rm -v "$PWD:/pwd" -w /pwd trufflesecurity/trufflehog:latest git file:///pwd/ --json --output=/pwd/trufflehog-report.json || true
+          fi
         continue-on-error: true
 
       - name: シークレットスキャン結果のアップロード
