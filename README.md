@@ -1,6 +1,6 @@
 # 手書き数字認識アプリ
 
-[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](https://github.com/yue4521/digit-recognizer/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://github.com/yue4521/digit-recognizer/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENCE)
 [![React](https://img.shields.io/badge/React-19.1.1-61DAFB?logo=react)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-Latest-339933?logo=node.js)](https://nodejs.org/)
