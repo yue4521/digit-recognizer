@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
     # 手動実行を許可
   push:
-    branches: [main, test/workflow]
     paths:
       - 'package*.json'
       - 'client/package*.json'
@@ -115,11 +114,188 @@ jobs:
             bandit-report.json
           retention-days: 30
 
+  # シークレットスキャン
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSSでシークレットスキャン実行
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: TruffleHog結果のJSON出力
+        run: |
+          docker run --rm -v "$PWD:/pwd" trufflesecurity/trufflehog:latest filesystem /pwd --json > trufflehog-report.json || true
+        continue-on-error: true
+
+      - name: シークレットスキャン結果のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: secrets-scan-report
+          path: trufflehog-report.json
+          retention-days: 30
+
+  # コードセキュリティ静的解析
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Semgrepでセキュリティ静的解析実行
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/javascript
+            p/typescript
+            p/python
+            p/react
+            p/nodejs
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN || '' }}
+        continue-on-error: true
+
+      - name: Semgrep結果のJSON出力
+        run: |
+          semgrep --config=p/security-audit --config=p/javascript --config=p/typescript --config=p/python --config=p/react --config=p/nodejs --json --output=semgrep-report.json . || true
+        continue-on-error: true
+
+      - name: 静的解析結果のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-report
+          path: semgrep-report.json
+          retention-days: 30
+
+  # ライセンス互換性チェック
+  license-check:
+    name: License Compatibility Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js環境のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Python環境のセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Node.js ライセンスチェック
+      - name: npm-license-checkerのインストール
+        run: npm install -g license-checker
+
+      - name: 依存関係のインストール
+        run: |
+          npm ci
+          npm ci --prefix client
+          npm ci --prefix server
+
+      - name: Node.js ライセンスチェック (ルート)
+        run: |
+          license-checker --json --out npm-licenses-root.json || true
+        continue-on-error: true
+
+      - name: Node.js ライセンスチェック (client)
+        run: |
+          cd client && license-checker --json --out ../npm-licenses-client.json || true
+        continue-on-error: true
+
+      - name: Node.js ライセンスチェック (server)
+        run: |
+          cd server && license-checker --json --out ../npm-licenses-server.json || true
+        continue-on-error: true
+
+      # Python ライセンスチェック
+      - name: pip-licensesのインストール
+        run: |
+          pip install --upgrade pip
+          pip install pip-licenses
+
+      - name: ml/依存関係のインストール
+        run: |
+          pip install -r ml/requirements.txt
+
+      - name: Python ライセンスチェック
+        run: |
+          pip-licenses --format=json --with-urls --output-file=pip-licenses-report.json || true
+        continue-on-error: true
+
+      - name: 互換性のないライセンスのチェック
+        run: |
+          echo "# ライセンス互換性チェック結果" > license-compatibility.md
+          echo "" >> license-compatibility.md
+          echo "実行日時: $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M:%S JST')" >> license-compatibility.md
+          echo "" >> license-compatibility.md
+          
+          # 問題となるライセンスパターン
+          PROBLEMATIC_LICENSES=("GPL" "AGPL" "LGPL" "Copyleft" "Commercial")
+          
+          echo "## 検査対象ライセンス" >> license-compatibility.md
+          printf '%s\n' "${PROBLEMATIC_LICENSES[@]}" | sed 's/^/- /' >> license-compatibility.md
+          echo "" >> license-compatibility.md
+          
+          # Node.js ライセンス検査
+          echo "## Node.js 依存関係" >> license-compatibility.md
+          for file in npm-licenses-*.json; do
+            if [ -f "$file" ]; then
+              component=$(echo "$file" | sed 's/npm-licenses-\(.*\)\.json/\1/')
+              echo "### $component" >> license-compatibility.md
+              # GPL系ライセンスを検索
+              if command -v jq >/dev/null 2>&1; then
+                jq -r 'to_entries[] | select(.value.licenses | tostring | test("GPL|AGPL|LGPL"; "i")) | "\(.key): \(.value.licenses)"' "$file" >> license-compatibility.md 2>/dev/null || echo "問題となるライセンスは見つかりませんでした" >> license-compatibility.md
+              else
+                echo "jqが利用できないため、手動確認が必要です" >> license-compatibility.md
+              fi
+              echo "" >> license-compatibility.md
+            fi
+          done
+          
+          # Python ライセンス検査
+          echo "## Python 依存関係" >> license-compatibility.md
+          if [ -f "pip-licenses-report.json" ]; then
+            if command -v jq >/dev/null 2>&1; then
+              jq -r '.[] | select(.License | test("GPL|AGPL|LGPL"; "i")) | "\(.Name): \(.License)"' pip-licenses-report.json >> license-compatibility.md 2>/dev/null || echo "問題となるライセンスは見つかりませんでした" >> license-compatibility.md
+            else
+              echo "jqが利用できないため、手動確認が必要です" >> license-compatibility.md
+            fi
+          else
+            echo "Python ライセンス情報が取得できませんでした" >> license-compatibility.md
+          fi
+          
+          cat license-compatibility.md
+
+      - name: ライセンスチェック結果のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-check-reports
+          path: |
+            npm-licenses-*.json
+            pip-licenses-report.json
+            license-compatibility.md
+          retention-days: 30
+
   # セキュリティ結果サマリー
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [node-security, python-security]
+    needs: [node-security, python-security, secrets-scan, static-analysis, license-check]
     if: always()
     steps:
       - name: リポジトリのチェックアウト
@@ -132,31 +308,242 @@ jobs:
 
       - name: セキュリティサマリー作成
         run: |
+          # GitHub Step Summary用のマークダウンを作成
+          echo "# 🔒 セキュリティ監査サマリー" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**実行日時:** $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M:%S JST')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # アーティファクト用のサマリーファイルも作成
           echo "# セキュリティ監査サマリー" > security-summary.md
           echo "" >> security-summary.md
           echo "実行日時: $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M:%S JST')" >> security-summary.md
           echo "" >> security-summary.md
           
-          echo "## Node.js 監査結果" >> security-summary.md
+          # 概要統計の初期化
+          total_critical=0
+          total_high=0
+          total_medium=0
+          total_low=0
+          
+          # Node.js 監査結果
+          echo "## 📦 Node.js 依存関係監査" >> $GITHUB_STEP_SUMMARY
+          echo "## Node.js 依存関係監査" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          echo "| Status | Component | Critical | High | Medium | Low |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----------|----------|------|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          
+          node_issues_found=false
           for file in security-reports/npm-audit-*/npm-audit-*.json; do
             if [ -f "$file" ]; then
               dir=$(echo "$file" | sed 's/.*npm-audit-\(.*\)\.json/\1/')
-              vulnerabilities=$(jq '.metadata.vulnerabilities | to_entries | length' "$file" 2>/dev/null || echo "0")
-              echo "- $dir: $vulnerabilities 件の脆弱性" >> security-summary.md
+              if [ "$dir" = "." ]; then
+                dir="root"
+              fi
+              
+              critical=$(jq '.metadata.vulnerabilities.critical // 0' "$file" 2>/dev/null || echo "0")
+              high=$(jq '.metadata.vulnerabilities.high // 0' "$file" 2>/dev/null || echo "0")
+              moderate=$(jq '.metadata.vulnerabilities.moderate // 0' "$file" 2>/dev/null || echo "0")
+              low=$(jq '.metadata.vulnerabilities.low // 0' "$file" 2>/dev/null || echo "0")
+              
+              total_critical=$((total_critical + critical))
+              total_high=$((total_high + high))
+              total_medium=$((total_medium + moderate))
+              total_low=$((total_low + low))
+              
+              status_icon="✅"
+              if [ "$critical" -gt 0 ] || [ "$high" -gt 0 ]; then
+                status_icon="❌"
+                node_issues_found=true
+              elif [ "$moderate" -gt 0 ]; then
+                status_icon="⚠️"
+              fi
+              
+              echo "| $status_icon | **$dir** | $critical | $high | $moderate | $low |" >> $GITHUB_STEP_SUMMARY
+              echo "- $dir: Critical: $critical, High: $high, Moderate: $moderate, Low: $low" >> security-summary.md
             fi
           done
           
+          if [ "$node_issues_found" = false ]; then
+            echo "| ✅ | Node.js依存関係 | 重大な脆弱性は検出されませんでした |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "" >> security-summary.md
-          echo "## Python 監査結果" >> security-summary.md
           
+          # Python 監査結果
+          echo "## 🐍 Python 依存関係監査" >> $GITHUB_STEP_SUMMARY
+          echo "## Python 依存関係監査" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          echo "| Status | Tool | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          python_issues_found=false
+          
+          # Safety チェック
           if [ -f "security-reports/python-security-reports/safety-report.json" ]; then
             safety_issues=$(jq '. | length' security-reports/python-security-reports/safety-report.json 2>/dev/null || echo "0")
+            if [ "$safety_issues" -gt 0 ]; then
+              echo "| ❌ | **Safety** | $safety_issues 件の既知脆弱性 |" >> $GITHUB_STEP_SUMMARY
+              python_issues_found=true
+            else
+              echo "| ✅ | **Safety** | 既知脆弱性なし |" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "- Safety: $safety_issues 件の既知脆弱性" >> security-summary.md
           fi
           
+          # pip-audit チェック
+          if [ -f "security-reports/python-security-reports/pip-audit-report.json" ]; then
+            pip_audit_issues=$(jq '. | length' security-reports/python-security-reports/pip-audit-report.json 2>/dev/null || echo "0")
+            if [ "$pip_audit_issues" -gt 0 ]; then
+              echo "| ⚠️ | **pip-audit** | $pip_audit_issues 件の潜在的問題 |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| ✅ | **pip-audit** | 問題なし |" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- pip-audit: $pip_audit_issues 件の潜在的問題" >> security-summary.md
+          fi
+          
+          # Bandit チェック
           if [ -f "security-reports/python-security-reports/bandit-report.json" ]; then
             bandit_issues=$(jq '.results | length' security-reports/python-security-reports/bandit-report.json 2>/dev/null || echo "0")
-            echo "- Bandit: $bandit_issues 件の潜在的セキュリティ問題" >> security-summary.md
+            bandit_high=$(jq '[.results[] | select(.issue_confidence == "HIGH")] | length' security-reports/python-security-reports/bandit-report.json 2>/dev/null || echo "0")
+            
+            if [ "$bandit_high" -gt 0 ]; then
+              echo "| ❌ | **Bandit** | $bandit_issues 件 (高信頼度: $bandit_high 件) |" >> $GITHUB_STEP_SUMMARY
+              python_issues_found=true
+            elif [ "$bandit_issues" -gt 0 ]; then
+              echo "| ⚠️ | **Bandit** | $bandit_issues 件の潜在的問題 |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| ✅ | **Bandit** | 問題なし |" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- Bandit: $bandit_issues 件の潜在的セキュリティ問題 (高信頼度: $bandit_high 件)" >> security-summary.md
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          # シークレットスキャン結果
+          echo "## 🔐 シークレットスキャン" >> $GITHUB_STEP_SUMMARY
+          echo "## シークレットスキャン" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          echo "| Status | Tool | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "security-reports/secrets-scan-report/trufflehog-report.json" ]; then
+            secrets_count=$(jq '. | length' security-reports/secrets-scan-report/trufflehog-report.json 2>/dev/null || echo "0")
+            if [ "$secrets_count" -gt 0 ]; then
+              echo "| ❌ | **TruffleHog** | $secrets_count 件の機密情報が検出されました |" >> $GITHUB_STEP_SUMMARY
+              echo "- TruffleHog: $secrets_count 件の機密情報が検出されました" >> security-summary.md
+            else
+              echo "| ✅ | **TruffleHog** | 機密情報の漏洩は検出されませんでした |" >> $GITHUB_STEP_SUMMARY
+              echo "- TruffleHog: 機密情報の漏洩は検出されませんでした" >> security-summary.md
+            fi
+          else
+            echo "| ⚠️ | **TruffleHog** | スキャン結果が利用できません |" >> $GITHUB_STEP_SUMMARY
+            echo "- TruffleHog: スキャン結果が利用できません" >> security-summary.md
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          # 静的解析結果
+          echo "## 🔍 静的セキュリティ解析" >> $GITHUB_STEP_SUMMARY
+          echo "## 静的セキュリティ解析" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          echo "| Status | Tool | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "security-reports/static-analysis-report/semgrep-report.json" ]; then
+            semgrep_count=$(jq '.results | length' security-reports/static-analysis-report/semgrep-report.json 2>/dev/null || echo "0")
+            semgrep_high=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' security-reports/static-analysis-report/semgrep-report.json 2>/dev/null || echo "0")
+            
+            if [ "$semgrep_high" -gt 0 ]; then
+              echo "| ❌ | **Semgrep** | $semgrep_count 件 (高重要度: $semgrep_high 件) |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$semgrep_count" -gt 0 ]; then
+              echo "| ⚠️ | **Semgrep** | $semgrep_count 件の潜在的問題 |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| ✅ | **Semgrep** | 問題なし |" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- Semgrep: $semgrep_count 件の潜在的問題 (高重要度: $semgrep_high 件)" >> security-summary.md
+          else
+            echo "| ⚠️ | **Semgrep** | 解析結果が利用できません |" >> $GITHUB_STEP_SUMMARY
+            echo "- Semgrep: 解析結果が利用できません" >> security-summary.md
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          # ライセンス互換性結果
+          echo "## 📄 ライセンス互換性" >> $GITHUB_STEP_SUMMARY
+          echo "## ライセンス互換性" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          echo "| Status | Tool | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "security-reports/license-check-reports/license-compatibility.md" ]; then
+            # ライセンス問題の有無を簡易チェック
+            problematic_found=$(grep -c "GPL\|AGPL\|LGPL" security-reports/license-check-reports/license-compatibility.md 2>/dev/null || echo "0")
+            if [ "$problematic_found" -gt 0 ]; then
+              echo "| ⚠️ | **ライセンスチェック** | 互換性に注意が必要なライセンスが見つかりました |" >> $GITHUB_STEP_SUMMARY
+              echo "- ライセンスチェック: 互換性に注意が必要なライセンスが見つかりました" >> security-summary.md
+            else
+              echo "| ✅ | **ライセンスチェック** | 問題のあるライセンスは検出されませんでした |" >> $GITHUB_STEP_SUMMARY
+              echo "- ライセンスチェック: 問題のあるライセンスは検出されませんでした" >> security-summary.md
+            fi
+          else
+            echo "| ⚠️ | **ライセンスチェック** | チェック結果が利用できません |" >> $GITHUB_STEP_SUMMARY
+            echo "- ライセンスチェック: チェック結果が利用できません" >> security-summary.md
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          # 全体サマリー
+          echo "## 📊 総合評価" >> $GITHUB_STEP_SUMMARY
+          echo "## 総合評価" >> security-summary.md
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> security-summary.md
+          
+          overall_status="✅ 良好"
+          if [ "$total_critical" -gt 0 ] || [ "$python_issues_found" = true ]; then
+            overall_status="❌ 重要な問題あり"
+          elif [ "$total_high" -gt 0 ] || [ "$total_medium" -gt 0 ]; then
+            overall_status="⚠️ 注意が必要"
+          fi
+          
+          echo "| 項目 | 値 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| **総合ステータス** | $overall_status |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Critical脆弱性** | $total_critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| **High脆弱性** | $total_high |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Medium脆弱性** | $total_medium |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Low脆弱性** | $total_low |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "総合ステータス: $overall_status" >> security-summary.md
+          echo "Critical脆弱性: $total_critical" >> security-summary.md
+          echo "High脆弱性: $total_high" >> security-summary.md
+          echo "Medium脆弱性: $total_medium" >> security-summary.md
+          echo "Low脆弱性: $total_low" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # 推奨アクション
+          if [ "$total_critical" -gt 0 ] || [ "$python_issues_found" = true ]; then
+            echo "## 🚨 推奨アクション" >> $GITHUB_STEP_SUMMARY
+            echo "## 推奨アクション" >> security-summary.md
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "" >> security-summary.md
+            echo "- 重要度の高い脆弱性が検出されました" >> $GITHUB_STEP_SUMMARY
+            echo "- 依存関係の更新を検討してください" >> $GITHUB_STEP_SUMMARY
+            echo "- セキュリティレポートの詳細を確認してください" >> $GITHUB_STEP_SUMMARY
+            echo "- 重要度の高い脆弱性が検出されました" >> security-summary.md
+            echo "- 依存関係の更新を検討してください" >> security-summary.md
+            echo "- セキュリティレポートの詳細を確認してください" >> security-summary.md
           fi
           
           cat security-summary.md
@@ -172,7 +559,7 @@ jobs:
   critical-vulnerabilities:
     name: Critical Vulnerabilities Check
     runs-on: ubuntu-latest
-    needs: [node-security, python-security]
+    needs: [node-security, python-security, secrets-scan, static-analysis]
     if: always()
     steps:
       - name: リポジトリのチェックアウト
@@ -213,6 +600,24 @@ jobs:
             high_confidence=$(jq '[.results[] | select(.issue_confidence == "HIGH")] | length' security-reports/python-security-reports/bandit-report.json 2>/dev/null || echo "0")
             if [ "$high_confidence" -gt 0 ]; then
               echo "::warning::高信頼度のセキュリティ問題が発見されました"
+              critical_found=true
+            fi
+          fi
+          
+          # シークレットスキャンの重要度チェック
+          if [ -f "security-reports/secrets-scan-report/trufflehog-report.json" ]; then
+            secrets_found=$(jq '. | length' security-reports/secrets-scan-report/trufflehog-report.json 2>/dev/null || echo "0")
+            if [ "$secrets_found" -gt 0 ]; then
+              echo "::error::機密情報の漏洩が検出されました"
+              critical_found=true
+            fi
+          fi
+          
+          # Semgrep高重要度問題チェック
+          if [ -f "security-reports/static-analysis-report/semgrep-report.json" ]; then
+            semgrep_high=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' security-reports/static-analysis-report/semgrep-report.json 2>/dev/null || echo "0")
+            if [ "$semgrep_high" -gt 0 ]; then
+              echo "::warning::高重要度のセキュリティ問題が静的解析で発見されました"
               critical_found=true
             fi
           fi
