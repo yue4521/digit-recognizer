@@ -131,13 +131,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
-          head: HEAD
-          extra_args: --debug --only-verified
-
-      - name: TruffleHog結果のJSON出力
-        run: |
-          docker run --rm -v "$PWD:/pwd" trufflesecurity/trufflehog:latest filesystem /pwd --json > trufflehog-report.json || true
+          extra_args: --debug --only-verified --json --output=trufflehog-report.json
         continue-on-error: true
 
       - name: シークレットスキャン結果のアップロード
