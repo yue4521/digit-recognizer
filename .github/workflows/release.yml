@@ -47,7 +47,7 @@ jobs:
               echo "No changes to commit"
             else
               git commit -m "docs: READMEのバージョンバッジを${VERSION}に更新"
-              git push origin HEAD:test/workflow || git push origin HEAD:main || echo "Push failed but continuing workflow"
+              git push origin HEAD:main || echo "Push failed but continuing workflow"
               echo "README.md changes committed and pushed"
             fi
           else
