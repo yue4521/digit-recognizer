@@ -34,7 +34,6 @@ React フロントエンド、Node.js/Express バックエンド、Python機械�
 - [クイックリファレンス](docs/quick-reference.md) - スクリプト一覧とパフォーマンス
 - [ブラウザサポート](docs/browser-support.md) - 対応ブラウザ詳細
 - [セキュリティ](docs/security.md) - セキュリティ機能詳細
-- [貢献ガイド](docs/contributing.md) - 貢献方法とガイドライン
 - [トラブルシューティング](docs/troubleshooting.md) - よくある問題と解決方法
 
 ## クイックスタート
