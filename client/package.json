@@ -42,7 +42,7 @@
     "webpack-dev-server": "^5.2.1"
   },
   "devDependencies": {
-    "eslint": "^9.33.0",
+    "eslint": "^9.32.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "prettier": "^3.0.0"
