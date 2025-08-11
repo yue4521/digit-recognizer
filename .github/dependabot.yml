@@ -92,7 +92,6 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "frontend"
       - "javascript"
     allow: *common-dependency-types
     # 安全にアップデートできない間接依存関係を無視
@@ -117,7 +116,6 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "backend"
       - "javascript"
     allow: *common-dependency-types
     groups: *common-groups
