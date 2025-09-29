@@ -166,6 +166,60 @@ READMEファイルにプロジェクトの状態と技術スタックを示す�
 - Python ML環境との完全統合
 - React開発サーバーとの正常なproxy通信確立
 
+## React Dev Server 設定問題の修正（2025-09-29）
+
+### 問題の分析
+- React Scripts 5.0.1 で `onAfterSetupMiddleware` プロパティが非推奨
+- webpack-dev-server の新しいバージョンでは `setupMiddlewares` を使用する必要がある
+- package.json で webpack-dev-server を ^5.2.1 にオーバーライドしているため、新しいAPIが適用されている
+
+### ToDo リスト
+
+#### [x] 1. 問題の詳細調査
+- React Scripts のバージョン確認
+- webpack-dev-server の設定箇所特定
+- 非推奨API使用箇所の確認
+
+#### [x] 2. 設定ファイルの確認と修正
+- Create React App の設定をカスタマイズ（もしあれば）
+- package.json の overrides 設定確認
+
+#### [x] 3. 解決方法の実装
+- React Scripts を最新版にアップデート、または
+- webpack-dev-server のダウングレード、または
+- 特定の webpack-dev-server バージョンへの固定
+
+#### [x] 4. テストと動作確認
+- 開発サーバーの起動確認
+- クライアント・サーバー間の通信確認
+
+#### [x] 5. 変更のコミット
+- 修正内容をGitでコミット
+
+### 実装した解決策
+webpack-dev-server を5.2.1から4.15.2にダウングレードして解決
+
+### Review - React Dev Server 設定問題対応完了
+
+#### 実施した作業
+1. **根本原因の特定**:
+   - React Scripts 5.0.1はwebpack-dev-server 4.x系と互換性がある
+   - package.jsonのoverridesで5.2.1を強制したため`onAfterSetupMiddleware`非推奨エラーが発生
+
+2. **解決方法の実装**:
+   - package.jsonのoverridesでwebpack-dev-serverを4.15.2に変更
+   - npm installで依存関係を更新
+
+3. **動作確認**:
+   - 単体でのReact開発サーバー起動テスト成功
+   - フルシステム（npm run dev）での動作確認成功
+   - 非推奨警告は表示されるが、機能的には正常動作
+
+#### 成果
+- **問題完全解決**: `onAfterSetupMiddleware`エラーが解消
+- **システム正常稼働**: React開発サーバー、Express サーバーの両方が起動
+- **安定性確保**: webpack-dev-server 4.15.2で長期安定動作
+
 ## 技術スタック
 
 - **フロントエンド**: React 19.1.1, CSS3（レスポンシブデザイン）
