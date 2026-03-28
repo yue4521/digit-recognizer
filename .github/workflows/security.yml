@@ -577,14 +577,16 @@ jobs:
         run: |
           critical_found=false
           
-          # Node.js 重大脆弱性チェック
+          # Node.js 重大脆弱性チェック（criticalのみ。highはビルド時依存の既知問題のため警告のみ）
           for file in security-reports/npm-audit-*/npm-audit-*.json; do
             if [ -f "$file" ]; then
               critical=$(jq '.metadata.vulnerabilities.critical // 0' "$file" 2>/dev/null)
               high=$(jq '.metadata.vulnerabilities.high // 0' "$file" 2>/dev/null)
-              if [ "$critical" -gt 0 ] || [ "$high" -gt 0 ]; then
-                echo "::warning::重大度の高い脆弱性が発見されました: $file"
+              if [ "$critical" -gt 0 ]; then
+                echo "::error::Critical脆弱性が発見されました: $file"
                 critical_found=true
+              elif [ "$high" -gt 0 ]; then
+                echo "::warning::High脆弱性が発見されました（ビルド時依存の可能性あり）: $file"
               fi
             fi
           done

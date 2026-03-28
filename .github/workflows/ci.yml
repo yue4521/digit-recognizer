@@ -46,13 +46,9 @@ jobs:
       # Python環境のセットアップとキャッシュ
       - name: Python環境のセットアップ
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55  # v5.5.0
-        with: { python-version: '3.11' }
-
-      - name: 仮想環境のセットアップとキャッシュ
-        uses: getsentry/action-setup-venv@f0daafa9688e48f939cace0378a46f2d422bd81f  # v2.0.0
         with:
           python-version: '3.11'
-          venv-dir: .venv
+          cache: 'pip'
           cache-dependency-path: ml/requirements.txt
 
       - name: Python依存関係のインストール
