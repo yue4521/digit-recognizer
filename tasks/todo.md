@@ -1,93 +1,141 @@
-# Dependabot PR管理作業（2026-03-28）
+# セキュリティ調査レポートに基づく対応計画（2026-03-28）
 
 ## 概要
 
-13件のDependabot PRがオープン状態。重複関係を整理し、セキュリティ修正を優先してマージする。
+`tasks/report.md`のセキュリティ調査結果に基づき、検出された問題への対応を行う。
+前回のDependabot PR管理作業の記録は`tasks/todo_prev.md`に退避済み。
 
-## PR分析サマリー
+---
 
-### セキュリティ修正（優先度: 高）
-- **PR #52**: server js-yaml 4.1.0→4.1.1（プロトタイプ汚染修正）CI: PASS
-- **PR #53**: client js-yaml 3.14.1→3.14.2（同上v3バックポート）CI: PASS
-- **PR #57**: server body-parser 2.2.0→2.2.1（CVE-2025-13466）CI: PASS
-- **PR #62**: server express 5.1.0→5.2.0（CVE-2024-51999）CI: PASS → **#76に包含、クローズ対象**
+## 優先度: 高
 
-### 通常更新
-- **PR #75**: client lodash 4.17.21→4.17.23 CI: PASS
-- **PR #76**: server production deps 13件（express 5.2.1含む、**#62を包含**）CI: PASS
-- **PR #80**: client webpack 5.101.0→5.105.0 CI: PASS → **#83に包含**
-- **PR #81**: client prettier 3.6.2→3.8.1（dev依存）CI: PASS
-- **PR #82**: server dev deps 7件（nodemon, eslint等）CI: PASS
-- **PR #83**: client production deps 150件（React 19.2.4含む大規模更新）CI: PASS
-- **PR #84**: client jsonpath 1.1.1→1.2.1 CI: PASS → **#83に包含**
-- **PR #85**: client qs+express CI: PASS
-- **PR #86**: server qs 6.14.0→6.14.2 CI: PASS
+### 1. client/ npm脆弱性対応（react-scripts起因・20件）
 
-## ToDo リスト
+根本原因: `react-scripts@5.x`（Create React App）が古いビルドツールチェーンを内包しメンテナンス停止状態。
+影響: ビルド時のみ（プロダクションバンドルには含まれない）。ただし開発環境のリスクは実在。
 
-### Phase 1: クローズ対象PRの処理
-- [x] PR #62をクローズ（理由: #76がexpress 5.2.1を含み完全に包含）
+- [x] 現状の脆弱性影響範囲を整理・文書化（ビルド時のみ / 開発環境のみ）
+  - **影響範囲**: ビルド時のみ（プロダクションバンドル非含有）。ただし開発マシン上での悪意あるnpm installシナリオは実在。
+  - serialize-javascript: css-minimizer-webpack-plugin経由のビルドツールチェーン内で使用。本番バンドルには含まれない。
+  - underscore: 同様にビルドツール内のみ。
+- [x] Vite移行の技術的フィージビリティ調査
+  - **react-scripts依存の機能**: ビルド（webpack）、開発サーバー（webpack-dev-server）、Jest統合テスト。
+  - **Vite移行の破壊的変更**: `jest` → `vitest` への変更が必要。`process.env.REACT_APP_*` → `import.meta.env.VITE_*` への変更が必要。`public/` のファイル参照方法の変更。`index.html` をルートに移動。
+  - **工数見積**: 中程度（0.5〜1日）。CRAはメンテナンス停止状態のため移行推奨。
+- [ ] 移行計画の策定（スケジュール・段階的移行の方針）
+  - **短期（現状維持）**: `npm audit` の脆弱性はビルド時のみのためプロダクションへの直接影響はなし。Dependabotのignoreルール設定済み。
+  - **中長期（推奨）**: Vite移行。まず `client/` をViteに移行し、テストはvitestへ切り替え。環境変数のプレフィックス変更（`REACT_APP_` → `VITE_`）が必要。
 
-### Phase 2: セキュリティ修正PRのマージ（優先）
-- [x] PR #52 マージ（server js-yaml セキュリティ修正）
-- [x] PR #53 マージ（client js-yaml セキュリティ修正）
-- [x] PR #57 マージ（server body-parser CVE-2025-13466修正）
+**主要な脆弱性:**
+- serialize-javascript <= 7.0.4 — High (RCE/DoS)
+- underscore <= 1.13.7 — High (DoS)
+- webpack-dev-server <= 5.2.0 — Moderate（overridesで緩和済み）
 
-### Phase 3: サーバー側更新のマージ
-- [x] PR #76 マージ（server production deps 13件、express 5.2.1含む）
-- [x] PR #86 マージ（server qs パッチ更新）
-- [x] PR #82 マージ（server dev deps 7件）
+---
 
-### Phase 4: クライアント側更新のマージ
-- [x] PR #75 マージ（client lodash更新）
-- [x] PR #81 マージ（client prettier dev依存更新）
-- [x] PR #83 マージ前に #80, #84, #85 との重複を確認（#80/#84は包含確認）
-- [x] PR #83 マージ（client production deps 150件）
-- [x] PR #80, #84 が自動クローズされたか確認 → 手動クローズ実施
-- [x] PR #85 マージ（client qs+express、#83未包含のため個別マージ）
+## 優先度: 中
 
-### Phase 5: マージ後の検証
-- [x] ローカルでmainブランチをpullして最新化
-- [x] `npm install`（root, client, server各階層）
-- [x] `npm audit`でセキュリティ脆弱性チェック
-- [x] ビルドテスト実行（成功）
+### 2. GitHub ActionsのSHA固定
 
-## 注意事項
-- 全PRのCI（Node.js CI, Security Audit）はPASS済み
-- Critical Vulnerabilities Checkは#52以外FAILだが、既知の開発依存脆弱性（webpack-dev-server 4.15.2）が原因の可能性あり
-- 大規模PR（#83: 150件）は破壊的変更のリスクがあるため最後にマージ
-- マージ時にリベース競合が発生した場合は適宜解決
+**対象:** `.github/workflows/ci.yml`, `security.yml`, `release.yml`
 
-## Review
+フローティングタグ（`@v4`, `@v5`）をSHAピン留めに変更し、サプライチェーン攻撃リスクを軽減する。
 
-### 実施した作業
+- [x] 各ワークフローで使用中のアクションとバージョンを一覧化
+- [x] 主要アクション（actions/checkout, actions/setup-node等）のSHA固定
+- [x] サードパーティアクション（getsentry/action-setup-venv）のSHA固定
+  - 注意: getsentry/action-setup-venv の v2.2.0 はリリース確認が困難なため、v2.0.0のSHA（f0daafa9688e48f939cace0378a46f2d422bd81f）に変更済み
 
-1. **PR #62 クローズ**（#76がexpress 5.2.1を包含）
+### 3. TruffleHogバージョン固定
 
-2. **セキュリティ修正PRのマージ**
-   - PR #52: server js-yaml プロトタイプ汚染修正
-   - PR #53: client js-yaml プロトタイプ汚染修正
-   - PR #57: server body-parser CVE-2025-13466修正
+**対象:** `.github/workflows/security.yml` L135, L139
 
-3. **サーバー側PRのマージ**（リベース競合解決を含む）
-   - PR #76: server production deps 13件（express 5.2.1）
-   - PR #86: server qs 6.14.2
-   - PR #82: server dev deps 7件
+- [x] `trufflesecurity/trufflehog:latest` を特定バージョン（例: `v3.88.27`）に固定
+  - `v3.94.1` に固定済み
 
-4. **クライアント側PRのマージ**（リベース競合解決を含む）
-   - PR #75: client lodash 4.17.23
-   - PR #81: client prettier 3.8.1
-   - PR #83: client production deps 111件（React 19.2.4等）
-   - PR #85: client qs+express
-   - PR #80, #84: #83包含のため手動クローズ
+### 4. release.yml のmainブランチ直接プッシュ見直し
 
-5. **マージ後の検証**
-   - npm install 完了（全階層）
-   - server: npm audit fix で脆弱性0件達成
-   - client: 20件残存（react-scripts内部のdev依存、破壊的変更なしには解消不可）
-   - ビルドテスト成功
+**対象:** `.github/workflows/release.yml` L50
 
-### セキュリティ状態
-- **Root**: 0件
-- **Server**: 0件（npm audit fixで解消）
-- **Client**: 20件（react-scripts内部のdev依存のみ、本番影響なし）
+- [x] `git push origin HEAD:main || echo ...` の方式を見直し
+  - `|| echo "..."` を除去し、pushの失敗がワークフロー失敗として検知されるよう修正
+- [ ] ブランチ保護ルールとの整合性を確認・修正
+  - 注意: mainへの直接pushはブランチ保護ルール設定次第。保護ルールが有効な場合はworkflow実行が失敗する。その場合はPR経由のフローへの変更を要検討。
+
+### 5. security.yml の continue-on-error 設定見直し
+
+**対象:** `.github/workflows/security.yml` L64, L98, L103, L108, L170, L174
+
+- [x] 個別セキュリティジョブの `continue-on-error: true` を見直し
+  - 設計確認: 個別ジョブはステップレベルで `continue-on-error: true` を使用し、最終的に `critical-vulnerabilities` ジョブで集約チェックする設計は意図的。変更なし。
+- [x] `critical-vulnerabilities` ジョブの最終チェック機能が正確に動作するか検証
+  - アーティファクトが存在しない場合（個別ジョブのインフラ失敗時）は脆弱性未検出として扱われる潜在的問題あり。ただし単純に `continue-on-error: false` にすると集約設計が崩れる。現状維持とし将来的に改善対象として記録。
+
+---
+
+## 優先度: 低
+
+### 6. CORS設定の制限
+
+**対象:** `server/index.js` L11
+
+- [x] 本番環境用の許可オリジンリストを定義
+- [x] 環境変数による開発/本番の切り替え実装
+  - `ALLOWED_ORIGINS` 環境変数（カンマ区切り）で制限。未設定時は全オリジン許可（開発環境向け）。
+
+### 7. ESLint/テストの再有効化
+
+**対象:** `.github/workflows/ci.yml` L27-31
+
+- [ ] ESLint v9設定の修正（別途対応）
+- [ ] テストスクリプトの整備（別途対応）
+- [ ] CIチェックの有効化（別途対応）
+
+### 8. ci.yml の push トリガーにブランチフィルタ追加
+
+**対象:** `.github/workflows/ci.yml` L4
+
+- [x] `push` トリガーに `branches: [main]` 等のフィルタを追加
+
+### 9. ファイルタイプ検証の強化
+
+**対象:** `server/routes/predict.js` L34-41
+
+- [x] マジックバイト（ファイルシグネチャ）による検証の追加
+  - JPEG（FF D8 FF）・PNG（89 50 4E 47）のマジックバイト検証を実装済み
+  - アップロード後、Python呼び出し前にファイル先頭4バイトを読み取り検証
+
+---
+
+---
+
+## Review（2026-03-28）
+
+### 実施した変更
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `.github/workflows/ci.yml` | SHA固定（checkout, setup-node, setup-python, upload-artifact, getsentry/action-setup-venv）、pushトリガーにbranches: [main]追加 |
+| `.github/workflows/security.yml` | SHA固定（全actions）、TruffleHog `latest` → `v3.94.1` に固定 |
+| `.github/workflows/release.yml` | SHA固定（全actions）、`git push || echo` の `|| echo` を除去 |
+| `server/index.js` | CORS設定を `ALLOWED_ORIGINS` 環境変数で制限できるよう変更 |
+| `server/routes/predict.js` | マジックバイト検証（JPEG/PNG）を追加 |
+
+### 対応しなかった項目
+
+- **ESLint/テストの再有効化**: ESLint v9の設定修正が必要で別途対応
+- **release.yml のブランチ保護ルールとの整合性**: 実際のリポジトリ保護設定に依存するため確認が必要
+- **security.yml の continue-on-error**: 集約設計を破壊するため現状維持（将来的な改善課題として記録）
+
+### 備考
+
+- `getsentry/action-setup-venv@v2.2.0` のSHAが確認できなかったため `v2.0.0` のSHAに変更。動作確認が必要。
+- 本番環境でCORS制限を有効にするには `.env` に `ALLOWED_ORIGINS=https://example.com` を設定する。
+
+---
+
+## 対応不要（確認済み）
+
+- **Python/Bandit**: ml/ 以下770行に対し問題なし
+- **Dependabotの設定**: react-scripts間接依存のignoreルールは適切に設定済み
+- **npm audit (root, server)**: 0件
