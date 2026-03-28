@@ -43,12 +43,9 @@ const upload = multer({
 
 // JPEG: FF D8 FF, PNG: 89 50 4E 47
 async function validateMagicBytes(filePath) {
-  const resolvedPath = path.resolve(filePath);
-  const resolvedUploadDir = path.resolve(UPLOAD_DIR);
-  if (!resolvedPath.startsWith(resolvedUploadDir + path.sep) && resolvedPath !== resolvedUploadDir) {
-    throw new Error('アップロードディレクトリ外のファイルへのアクセスは許可されていません');
-  }
-  const fd = await fs.open(resolvedPath, 'r');
+  // path.basename でディレクトリ成分を除去し、信頼できるUPLOAD_DIRから再構築する
+  const safePath = path.join(path.resolve(UPLOAD_DIR), path.basename(filePath));
+  const fd = await fs.open(safePath, 'r');
   try {
     const buf = Buffer.alloc(4);
     await fd.read(buf, 0, 4, 0);
