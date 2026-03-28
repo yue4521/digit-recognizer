@@ -41,6 +41,20 @@ const upload = multer({
   }
 });
 
+// JPEG: FF D8 FF, PNG: 89 50 4E 47
+async function validateMagicBytes(filePath) {
+  const fd = await fs.open(filePath, 'r');
+  try {
+    const buf = Buffer.alloc(4);
+    await fd.read(buf, 0, 4, 0);
+    const isJpeg = buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+    const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+    return isJpeg || isPng;
+  } finally {
+    await fd.close();
+  }
+}
+
 function callPythonScript(imagePath) {
   return new Promise((resolve, reject) => {
     const pythonScriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
@@ -129,7 +143,14 @@ router.post('/predict', upload.single('image'), async (req, res) => {
     }
     
     uploadedFilePath = req.file.path;
-    
+
+    if (!await validateMagicBytes(uploadedFilePath)) {
+      return res.status(400).json({
+        error: '無効なファイルです',
+        message: 'ファイルの内容がJPEGまたはPNG形式ではありません'
+      });
+    }
+
     console.log(`画像を処理中: ${req.file.originalname}`);
     console.log(`ファイルサイズ: ${req.file.size} バイト`);
     console.log(`一意ファイル名: ${path.basename(uploadedFilePath)}`);

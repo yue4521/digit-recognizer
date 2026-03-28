@@ -8,7 +8,10 @@ const predictRoute = require('./routes/predict');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : true; // 開発環境では全オリジン許可
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
