@@ -161,7 +161,7 @@
 - [x] PR #100 をマージ（client eslint-plugin-react-hooks 5→7）
 - [x] `eslint-plugin-react` v10対応版の有無を確認 → 非対応確認
 - [x] PR #101 をクローズ（ESLint v9 維持）
-- [ ] main ブランチの CI が全通過していることを確認
+- [x] main ブランチの CI が全通過していることを確認
 
 ### Review（2026-04-05）
 
