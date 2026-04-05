@@ -100,8 +100,14 @@ updates:
         versions: ["< 2.0.1"]
       - dependency-name: "postcss"
         versions: ["< 8.4.31"]
+      # react-scripts@5.0.1 の推移的依存関係に固定されており修正不可のため全バージョン無視
+      # 根本解決は CRA → Vite 移行（tasks/todo.md 参照）
       - dependency-name: "webpack-dev-server"
-        versions: ["<= 5.2.0"]
+        versions: [">= 0"]
+      - dependency-name: "underscore"
+        versions: [">= 0"]
+      - dependency-name: "@tootallnate/once"
+        versions: [">= 0"]
       # eslint-plugin-react が ESLint v10 のピア依存をサポートするまでメジャー更新を無視
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
