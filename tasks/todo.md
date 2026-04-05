@@ -134,6 +134,53 @@
 
 ---
 
+## Dependabot PR レビュー・マージ（2026-04-05）
+
+2026-03-30 に Dependabot が作成した 6件の依存関係更新PRを検証・マージした。
+
+### PRステータス
+
+| PR# | 内容 | CIステータス | 結果 |
+|-----|------|------------|------|
+| #96 | server prod deps（4件） | ✅ 全通過 | マージ済み |
+| #97 | server dev deps（7件） | ✅ 全通過 | マージ済み |
+| #98 | server ESLint 9.36→10.1 | ✅ 全通過 | マージ済み（Dependabot自動リベース後） |
+| #99 | client prod deps（135件） | ✅ 全通過 | マージ済み |
+| #100 | client eslint-plugin-react-hooks 5→7 | ✅ 全通過 | マージ済み |
+| #101 | client ESLint 9.32→10.1 | ❌ 3件失敗 | クローズ（延期） |
+
+**PR #101 クローズ理由:** `eslint-plugin-react@7.37.5`（最新版）のピア依存が `eslint@"^9.7"` まで対応（v10 除外）。ESLint v10 対応版がリリースされるまでクライアントは v9 を維持する。
+
+### ToDo
+
+- [x] tasks/todo.md に Dependabot PR マージ計画を追加
+- [x] PR #96 をマージ（server prod deps）
+- [x] PR #97 をマージ（server dev deps）
+- [x] PR #98 をマージ（server ESLint 9.36→10.1）
+- [x] PR #99 をマージ（client prod deps）
+- [x] PR #100 をマージ（client eslint-plugin-react-hooks 5→7）
+- [x] `eslint-plugin-react` v10対応版の有無を確認 → 非対応確認
+- [x] PR #101 をクローズ（ESLint v9 維持）
+- [ ] main ブランチの CI が全通過していることを確認
+
+### Review（2026-04-05）
+
+#### マージした PR
+
+| PR# | 内容 |
+|-----|------|
+| #96 | server: content-disposition, finalhandler, send, serve-static を更新 |
+| #97 | server: ESLint 関連 dev deps 7件更新（@eslint/*, eslint-plugin-n等） |
+| #98 | server: ESLint 9.36.0 → 10.1.0 へアップグレード（CI通過確認済み） |
+| #99 | client: Babel/webpack 等 prod deps 135件更新 |
+| #100 | client: eslint-plugin-react-hooks 5.2.0 → 7.0.1 へアップグレード |
+
+#### クローズした PR
+
+- **PR #101** (client ESLint 9.32→10.1): `eslint-plugin-react@7.37.5` が ESLint v10 の peer依存を持たないためクローズ。`eslint-plugin-react` が v10 対応版をリリース次第、再対応。
+
+---
+
 ## 対応不要（確認済み）
 
 - **Python/Bandit**: ml/ 以下770行に対し問題なし
