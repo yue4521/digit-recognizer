@@ -102,6 +102,9 @@ updates:
         versions: ["< 8.4.31"]
       - dependency-name: "webpack-dev-server"
         versions: ["<= 5.2.0"]
+      # eslint-plugin-react が ESLint v10 のピア依存をサポートするまでメジャー更新を無視
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     groups: *common-groups
 
   # サーバーディレクトリ npm パッケージ管理

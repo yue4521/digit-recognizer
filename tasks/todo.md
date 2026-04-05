@@ -181,6 +181,36 @@
 
 ---
 
+## Dependabot PR処理 & dependabot.yml修正（2026-04-05）
+
+PR #102 マージ + PR #101 再発防止のため dependabot.yml に ESLint メジャー更新の ignore ルールを追加。
+
+### ToDo
+
+- [x] tasks/todo.md に本セクション追加
+- [x] PR #102 の CI ステータスを確認 → ✅ 全通過（11件 SUCCESS）
+- [x] PR #102 をマージ（lodash 4.17.23→4.18.1 セキュリティ修正）
+- [x] `.github/dependabot.yml` に ESLint メジャー更新の ignore ルールを追加
+- [x] main ブランチの CI が全通過していることを確認（CI/Security Audit/Push on main ✅）
+- [x] tasks/todo.md の Review セクションを更新
+- [x] git コミット
+
+### Review（2026-04-05）
+
+#### マージした PR
+
+| PR# | 内容 |
+|-----|------|
+| #102 | client: lodash 4.17.23→4.18.1（プロトタイプ汚染 GHSA-f23m-r3pf-42rh・CVE-2026-4800 修正） |
+
+#### 修正したファイル
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `.github/dependabot.yml` | client npm の ignore に `eslint` メジャー更新ルールを追加。`eslint-plugin-react` が ESLint v10 対応版をリリースするまで再発防止。 |
+
+---
+
 ## 対応不要（確認済み）
 
 - **Python/Bandit**: ml/ 以下770行に対し問題なし
