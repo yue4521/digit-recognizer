@@ -14,7 +14,7 @@ dependencies = [
     "scikit-learn>=1.0.0",
     "numpy>=1.20.0",
     "pillow>=8.0.0",
-    "joblib>=1.0.0"
+    "joblib>=1.5.3"
 ]
 
 [project.urls]
