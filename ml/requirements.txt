@@ -1,7 +1,7 @@
 # Python 3.13対応版
 # 機械学習用ライブラリ
 numpy>=2.0.0
-Pillow>=11.0.0
+Pillow>=12.2.0
 scikit-learn>=1.5.0
 joblib>=1.3.0
 
